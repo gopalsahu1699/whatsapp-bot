@@ -4,65 +4,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Training - Autommensor Bot</title>
-    <link rel="stylesheet" href="style.css">
+    <title>AI Training - Autommensor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#6366f1',
+                            dark: '#4f46e5',
+                        },
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .nav-link-active {
+            color: #6366f1;
+            border-bottom: 2px solid #6366f1;
+        }
+    </style>
 </head>
 
-<body>
-    <div class="dashboard">
+<body class="text-slate-100 font-sans min-h-screen">
+    <div class="dashboard pb-20">
         <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1>🤖 Autommensor</h1>
-                <nav class="nav-menu">
-                    <a href="dashboard.html" class="nav-link">Dashboard</a>
-                    <a href="templates.html" class="nav-link">Templates</a>
-                    <a href="training.html" class="nav-link active">AI Training</a>
-                </nav>
-                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        <header class="glass border-b border-dark-border sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-8">
+                        <h1
+                            class="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                            🤖 Autommensor
+                        </h1>
+                        <nav id="navMenu" class="hidden md:flex space-x-6">
+                            <a href="dashboard.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Dashboard</a>
+                            <a href="templates.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Templates</a>
+                            <a href="training.html"
+                                class="nav-link text-sm font-medium hover:text-primary transition-colors py-5 nav-link-active">AI
+                                Training</a>
+                        </nav>
+                    </div>
+                    <button id="logoutBtn"
+                        class="px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+                </div>
             </div>
         </header>
 
         <!-- Main Content -->
-        <main class="main-content">
-            <section class="card">
-                <h2>🧠 Train Your AI Bot</h2>
-                <p class="help-text">
-                    The text below is what your AI bot uses to answer customer questions.
-                    Update it with your latest business details, FAQs, and product info.
-                </p>
-
-                <div class="form-group">
-                    <label for="aboutUs">About Us</label>
-                    <textarea id="aboutUs" rows="5" placeholder="Tell the bot about your business..."></textarea>
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+            <section class="glass border border-dark-border rounded-2xl p-8 shadow-xl">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-bold flex items-center mb-2">
+                        <span class="mr-3">🧠</span> Train Your AI Bot
+                    </h2>
+                    <p class="text-slate-400 text-sm">
+                        Update your business facts, FAQs, and policies. The AI uses this context to answer customer
+                        queries instantly.
+                    </p>
                 </div>
 
-                <div class="form-group">
-                    <label for="products">Products & Services</label>
-                    <textarea id="products" rows="8"
-                        placeholder="List your products, prices, and services..."></textarea>
+                <div class="space-y-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="space-y-2">
+                            <label for="aboutUs"
+                                class="block text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">About
+                                Us</label>
+                            <textarea id="aboutUs" rows="6" placeholder="Tell the bot about your business..."
+                                class="w-full px-4 py-3 bg-dark-bg/60 border border-dark-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder-slate-600 text-sm leading-relaxed"></textarea>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="contact"
+                                class="block text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Contact
+                                Information</label>
+                            <textarea id="contact" rows="6" placeholder="Website, social media, phone, email..."
+                                class="w-full px-4 py-3 bg-dark-bg/60 border border-dark-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder-slate-600 text-sm leading-relaxed"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-8">
+                        <div class="space-y-2">
+                            <label for="products"
+                                class="block text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Products &
+                                Services</label>
+                            <textarea id="products" rows="10" placeholder="List your products, prices, and services..."
+                                class="w-full px-4 py-3 bg-dark-bg/60 border border-dark-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder-slate-600 text-sm leading-relaxed"></textarea>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="faq"
+                                class="block text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Frequently
+                                Asked Questions (FAQ)</label>
+                            <textarea id="faq" rows="10" placeholder="Enter common questions and answers..."
+                                class="w-full px-4 py-3 bg-dark-bg/60 border border-dark-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder-slate-600 text-sm leading-relaxed"></textarea>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label for="refundPolicy"
+                                class="block text-sm font-bold text-slate-400 uppercase tracking-widest ml-1">Refund
+                                Policy</label>
+                            <textarea id="refundPolicy" rows="5" placeholder="Your refund and return policy..."
+                                class="w-full px-4 py-3 bg-dark-bg/60 border border-dark-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary transition-all placeholder-slate-600 text-sm leading-relaxed"></textarea>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="faq">Frequently Asked Questions (FAQ)</label>
-                    <textarea id="faq" rows="8" placeholder="Enter common questions and answers..."></textarea>
+                <div id="saveStatus"
+                    class="hidden my-8 p-4 rounded-xl text-center font-bold text-xs uppercase tracking-widest animate-in fade-in duration-300">
                 </div>
 
-                <div class="form-group">
-                    <label for="refundPolicy">Refund Policy</label>
-                    <textarea id="refundPolicy" rows="4" placeholder="Your refund and return policy..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="contact">Contact Information</label>
-                    <textarea id="contact" rows="4" placeholder="Website, social media, phone, email..."></textarea>
-                </div>
-
-                <div id="saveStatus" class="status-message" style="display: none;"></div>
-
-                <div class="form-actions">
-                    <button id="saveTrainingBtn" class="btn btn-primary">Save & Apply Changes</button>
-                    <button id="resetTrainingBtn" class="btn btn-secondary">Reset to Current</button>
+                <div class="flex gap-4 pt-8 border-t border-dark-border/30">
+                    <button id="saveTrainingBtn"
+                        class="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-95">
+                        Save & Apply Changes
+                    </button>
+                    <button id="resetTrainingBtn"
+                        class="px-8 py-4 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl transition-all">
+                        Reset to Current
+                    </button>
                 </div>
             </section>
         </main>

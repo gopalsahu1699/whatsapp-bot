@@ -58,25 +58,32 @@ async function loadWhatsAppStatus() {
         const data = await response.json();
 
         const statusDot = document.getElementById('statusDot');
+        const statusDotFixed = document.getElementById('statusDotFixed');
         const statusText = document.getElementById('statusText');
         const qrContainer = document.getElementById('qrContainer');
         const disconnectBtn = document.getElementById('disconnectBtn');
 
         if (data.connected) {
-            statusDot.className = 'status-dot connected';
-            statusText.textContent = 'Connected';
-            qrContainer.style.display = 'none';
-            disconnectBtn.style.display = 'inline-block';
+            statusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75';
+            statusDotFixed.className = 'relative inline-flex rounded-full h-3 w-3 bg-emerald-500';
+            statusText.textContent = 'Connected & Active';
+            statusText.className = 'text-sm font-bold text-emerald-400';
+            qrContainer.classList.add('hidden');
+            disconnectBtn.classList.remove('hidden');
         } else if (data.hasQR) {
-            statusDot.className = 'status-dot disconnected';
-            statusText.textContent = 'Not Connected - Scan QR Code';
-            disconnectBtn.style.display = 'none';
+            statusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75';
+            statusDotFixed.className = 'relative inline-flex rounded-full h-3 w-3 bg-red-500';
+            statusText.textContent = 'Action Required: Scan QR';
+            statusText.className = 'text-sm font-bold text-red-400';
+            disconnectBtn.classList.add('hidden');
             await loadQRCode();
         } else {
-            statusDot.className = 'status-dot disconnected';
+            statusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75';
+            statusDotFixed.className = 'relative inline-flex rounded-full h-3 w-3 bg-slate-500';
             statusText.textContent = 'Initializing...';
-            qrContainer.style.display = 'none';
-            disconnectBtn.style.display = 'none';
+            statusText.className = 'text-sm font-bold text-slate-400';
+            qrContainer.classList.add('hidden');
+            disconnectBtn.classList.add('hidden');
         }
     } catch (error) {
         console.error('Failed to load WhatsApp status:', error);
@@ -90,7 +97,7 @@ async function loadQRCode() {
 
         if (data.qr) {
             document.getElementById('qrCode').src = data.qr;
-            document.getElementById('qrContainer').style.display = 'block';
+            document.getElementById('qrContainer').classList.remove('hidden');
         }
     } catch (error) {
         console.error('Failed to load QR code:', error);
@@ -145,6 +152,10 @@ async function uploadCSV() {
     const formData = new FormData();
     formData.append('csv', file);
 
+    const btn = document.getElementById('uploadCsvBtn');
+    btn.disabled = true;
+    btn.textContent = 'Uploading...';
+
     try {
         const response = await fetch('/api/bulk/upload-csv', {
             method: 'POST',
@@ -156,18 +167,21 @@ async function uploadCSV() {
         if (response.ok) {
             uploadedContacts = data.contacts;
             const statusDiv = document.getElementById('csvStatus');
-            statusDiv.className = 'status-message success';
-            statusDiv.textContent = `✓ Uploaded ${data.count} contacts successfully`;
-            statusDiv.style.display = 'block';
+            statusDiv.className = 'p-4 rounded-xl text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 animate-in slide-in-from-top duration-300';
+            statusDiv.textContent = `✓ Successfully parsed ${data.count} contacts.`;
+            statusDiv.classList.remove('hidden');
             updateSendButton();
         } else {
             throw new Error(data.error);
         }
     } catch (error) {
         const statusDiv = document.getElementById('csvStatus');
-        statusDiv.className = 'status-message error';
-        statusDiv.textContent = '✗ Failed to upload CSV: ' + error.message;
-        statusDiv.style.display = 'block';
+        statusDiv.className = 'p-4 rounded-xl text-xs font-bold bg-red-500/10 border border-red-500/30 text-red-500 animate-in slide-in-from-top duration-300';
+        statusDiv.textContent = '✗ Error: ' + error.message;
+        statusDiv.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Upload';
     }
 }
 
@@ -177,7 +191,7 @@ function previewTemplate() {
     const preview = document.getElementById('templatePreview');
 
     if (!templateId) {
-        preview.style.display = 'none';
+        preview.classList.add('hidden');
         updateSendButton();
         return;
     }
@@ -186,11 +200,11 @@ function previewTemplate() {
     if (!template) return;
 
     preview.innerHTML = `
-        <strong>Template: ${escapeHtml(template.name)}</strong><br>
-        <div style="margin-top: 10px; color: var(--text-secondary);">${escapeHtml(template.message)}</div>
-        ${template.imagePath ? '<div style="margin-top: 10px; color: var(--text-secondary);">📷 Includes image</div>' : ''}
+        <div class="font-bold text-indigo-400 mb-2 uppercase tracking-tight text-[10px]">Active Template: ${escapeHtml(template.name)}</div>
+        <div class="text-slate-300 leading-relaxed">${escapeHtml(template.message)}</div>
+        ${template.imagePath ? '<div class="mt-3 inline-flex items-center px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded-md text-[10px] uppercase font-bold tracking-widest"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> Attachment Included</div>' : ''}
     `;
-    preview.style.display = 'block';
+    preview.classList.remove('hidden');
     updateSendButton();
 }
 
@@ -205,9 +219,9 @@ async function sendBulkMessages() {
 
     if (!confirm(`Send messages to ${uploadedContacts.length} contacts?`)) return;
 
-    document.getElementById('sendBulkBtn').style.display = 'none';
-    document.getElementById('cancelBulkBtn').style.display = 'inline-block';
-    document.getElementById('bulkProgress').style.display = 'block';
+    document.getElementById('sendBulkBtn').classList.add('hidden');
+    document.getElementById('cancelBulkBtn').classList.remove('hidden');
+    document.getElementById('bulkProgress').classList.remove('hidden');
 
     try {
         const response = await fetch('/api/bulk/send', {
@@ -256,15 +270,15 @@ function updateProgress(data) {
 
     fill.style.width = data.percentage + '%';
     text.textContent = data.percentage + '%';
-    details.textContent = `Sent: ${data.sent} | Failed: ${data.failed} | Total: ${data.total}`;
+    details.textContent = `Completed: ${data.sent} | Issues: ${data.failed} | Total: ${data.total}`;
 
     if (data.current) {
-        details.textContent += ` | Current: ${data.current}`;
+        details.textContent += ` | Processing: ${data.current}`;
     }
 }
 
 function completeBulkSend(data) {
-    alert(`Bulk send complete!\nSent: ${data.sent}\nFailed: ${data.failed}`);
+    alert(`Campaign Finished!\nSuccessfully Sent: ${data.sent}\nFailed/Errors: ${data.failed}`);
     resetBulkUI();
 }
 
@@ -276,9 +290,9 @@ function cancelBulk() {
 }
 
 function resetBulkUI() {
-    document.getElementById('sendBulkBtn').style.display = 'inline-block';
-    document.getElementById('cancelBulkBtn').style.display = 'none';
-    document.getElementById('bulkProgress').style.display = 'none';
+    document.getElementById('sendBulkBtn').classList.remove('hidden');
+    document.getElementById('cancelBulkBtn').classList.add('hidden');
+    document.getElementById('bulkProgress').classList.add('hidden');
     document.getElementById('progressFill').style.width = '0%';
 }
 

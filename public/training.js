@@ -64,7 +64,8 @@ async function saveTrainingData() {
     };
 
     btn.disabled = true;
-    btn.textContent = 'Saving...';
+    const originalText = btn.textContent;
+    btn.innerHTML = '<span class="flex items-center justify-center"><svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Applying to AI...</span>';
 
     try {
         const response = await fetch('/api/training/data', {
@@ -74,27 +75,33 @@ async function saveTrainingData() {
         });
 
         if (response.ok) {
-            showStatus('Training data saved and applied successfully!', 'success');
+            showStatus('Intelligence updated! The bot is now smarter.', 'success');
         } else {
             const error = await response.json();
-            showStatus('Failed to save data: ' + error.error, 'error');
+            showStatus('Failed to update AI: ' + error.error, 'error');
         }
     } catch (error) {
-        showStatus('Connection error. Failed to save.', 'error');
+        showStatus('Connection failed. Could not sync with AI model.', 'error');
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Save & Apply Changes';
+        btn.textContent = originalText;
     }
 }
 
 function showStatus(message, type) {
     const statusDiv = document.getElementById('saveStatus');
     statusDiv.textContent = message;
-    statusDiv.className = 'status-message ' + type;
-    statusDiv.style.display = 'block';
+
+    if (type === 'success') {
+        statusDiv.className = 'my-8 p-4 rounded-xl text-center font-bold text-xs uppercase tracking-widest bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 animate-in fade-in duration-300';
+    } else {
+        statusDiv.className = 'my-8 p-4 rounded-xl text-center font-bold text-xs uppercase tracking-widest bg-red-500/10 border border-red-500/30 text-red-500 animate-in fade-in duration-300';
+    }
+
+    statusDiv.classList.remove('hidden');
 
     setTimeout(() => {
-        statusDiv.style.display = 'none';
+        statusDiv.classList.add('hidden');
     }, 5000);
 }
 

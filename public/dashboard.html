@@ -4,89 +4,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Autommensor Bot</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Dashboard - Autommensor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#6366f1',
+                            dark: '#4f46e5',
+                        },
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .nav-link-active {
+            color: #6366f1;
+            border-bottom: 2px solid #6366f1;
+        }
+    </style>
 </head>
 
-<body>
-    <div class="dashboard">
+<body class="text-slate-100 font-sans min-h-screen">
+    <div class="dashboard pb-20">
         <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1>🤖 Autommensor</h1>
-                <nav class="nav-menu">
-                    <a href="dashboard.html" class="nav-link active">Dashboard</a>
-                    <a href="templates.html" class="nav-link">Templates</a>
-                    <a href="training.html" class="nav-link">AI Training</a>
-                </nav>
-                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        <header class="glass border-b border-dark-border sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-8">
+                        <h1
+                            class="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                            🤖 Autommensor
+                        </h1>
+                        <nav id="navMenu" class="hidden md:flex space-x-6">
+                            <a href="dashboard.html"
+                                class="nav-link text-sm font-medium hover:text-primary transition-colors py-5 nav-link-active">Dashboard</a>
+                            <a href="templates.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Templates</a>
+                            <a href="training.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">AI
+                                Training</a>
+                        </nav>
+                    </div>
+                    <button id="logoutBtn"
+                        class="px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+                </div>
             </div>
         </header>
 
         <!-- Main Content -->
-        <main class="main-content">
-            <!-- WhatsApp Connection Section -->
-            <section class="card">
-                <h2>📱 WhatsApp Connection</h2>
-                <div id="whatsappStatus">
-                    <div class="status-indicator">
-                        <span class="status-dot" id="statusDot"></span>
-                        <span id="statusText">Checking...</span>
-                    </div>
-                    <div id="qrContainer" style="display: none;">
-                        <p>Scan this QR code with WhatsApp:</p>
-                        <img id="qrCode" alt="QR Code" />
-                    </div>
-                    <button id="disconnectBtn" class="btn btn-danger" style="display: none;">Disconnect</button>
-                </div>
-            </section>
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-
-            <!-- Bulk Messaging Section -->
-            <section class="card">
-                <h2>📤 Bulk Messaging</h2>
-
-                <div class="bulk-steps">
-                    <!-- Step 1: Upload CSV -->
-                    <div class="step">
-                        <h3>Step 1: Upload Contacts (CSV)</h3>
-                        <p class="help-text">CSV format: name,phone,custom1,custom2,...</p>
-                        <a href="#" id="downloadSample" class="link">Download Sample CSV</a>
-
-                        <div class="form-group">
-                            <input type="file" id="csvFile" accept=".csv">
-                            <button id="uploadCsvBtn" class="btn btn-primary">Upload CSV</button>
-                        </div>
-
-                        <div id="csvStatus" class="status-message" style="display: none;"></div>
-                    </div>
-
-                    <!-- Step 2: Select Template -->
-                    <div class="step">
-                        <h3>Step 2: Select Template</h3>
-                        <select id="bulkTemplateSelect" class="form-control">
-                            <option value="">-- Select a template --</option>
-                        </select>
-                        <div id="templatePreview" class="template-preview" style="display: none;"></div>
-                    </div>
-
-                    <!-- Step 3: Send -->
-                    <div class="step">
-                        <h3>Step 3: Send Messages</h3>
-                        <button id="sendBulkBtn" class="btn btn-success" disabled>Send Bulk Messages</button>
-                        <button id="cancelBulkBtn" class="btn btn-danger" style="display: none;">Cancel</button>
-
-                        <div id="bulkProgress" class="progress-container" style="display: none;">
-                            <div class="progress-bar">
-                                <div id="progressFill" class="progress-fill"></div>
+                <!-- Left Column: Settings/Status -->
+                <div class="lg:col-span-1 space-y-8">
+                    <!-- WhatsApp Connection Card -->
+                    <section class="glass border border-dark-border rounded-2xl p-6 shadow-xl">
+                        <h2 class="text-lg font-bold mb-6 flex items-center">
+                            <span class="mr-2">📱</span> WhatsApp Connection
+                        </h2>
+                        <div id="whatsappStatus" class="space-y-6">
+                            <div
+                                class="flex items-center space-x-3 p-4 bg-dark-bg/50 rounded-xl border border-dark-border/50">
+                                <span class="relative flex h-3 w-3">
+                                    <span id="statusDot"
+                                        class="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+                                    <span id="statusDotFixed"
+                                        class="relative inline-flex rounded-full h-3 w-3 bg-slate-500"></span>
+                                </span>
+                                <span id="statusText" class="text-sm font-bold text-slate-400">Checking...</span>
                             </div>
-                            <div id="progressText" class="progress-text">0%</div>
-                            <div id="progressDetails" class="progress-details"></div>
+
+                            <div id="qrContainer"
+                                class="hidden text-center p-6 bg-white rounded-2xl shadow-inner animate-in fade-in zoom-in duration-500">
+                                <p class="text-slate-900 text-xs font-bold uppercase tracking-wider mb-4">Scan to
+                                    Connect</p>
+                                <img id="qrCode" class="mx-auto w-full max-w-[200px]" alt="QR Code" />
+                            </div>
+
+                            <button id="disconnectBtn"
+                                class="hidden w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 font-bold rounded-xl transition-all">
+                                Disconnect Session
+                            </button>
                         </div>
-                    </div>
+                    </section>
                 </div>
-            </section>
+
+                <!-- Right Column: Actions -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Bulk Messaging Section -->
+                    <section class="glass border border-dark-border rounded-2xl p-8 shadow-xl">
+                        <div class="flex items-center justify-between mb-8">
+                            <h2 class="text-xl font-bold flex items-center">
+                                <span class="mr-2">📤</span> Bulk Messaging
+                            </h2>
+                            <span
+                                class="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded-full border border-indigo-500/20 font-bold uppercase tracking-widest italic">Ready
+                                to blast</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-12">
+                            <!-- Step 1: Upload CSV -->
+                            <div class="space-y-4">
+                                <h3
+                                    class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center group">
+                                    <span
+                                        class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] mr-2">1</span>
+                                    Upload Contacts (CSV)
+                                </h3>
+                                <div class="bg-dark-bg/30 p-6 rounded-2xl border border-dark-border/30 space-y-4">
+                                    <div class="flex justify-between items-center text-xs">
+                                        <p class="text-slate-500">Columns: name, phone + custom vars</p>
+                                        <a href="#" id="downloadSample"
+                                            class="text-primary hover:underline font-bold">Download Sample</a>
+                                    </div>
+                                    <div class="flex flex-col sm:flex-row gap-4">
+                                        <input type="file" id="csvFile" accept=".csv"
+                                            class="flex-grow file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-indigo-500/20 file:text-indigo-400 hover:file:bg-indigo-500/30 cursor-pointer text-slate-500 transition-all">
+                                        <button id="uploadCsvBtn"
+                                            class="px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded-xl shadow-lg transition-all">Upload</button>
+                                    </div>
+                                    <div id="csvStatus"
+                                        class="hidden p-4 rounded-xl text-xs font-medium border animate-in slide-in-from-top duration-300">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Select Template -->
+                            <div class="space-y-4">
+                                <h3
+                                    class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center">
+                                    <span
+                                        class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] mr-2">2</span>
+                                    Select Content
+                                </h3>
+                                <div class="space-y-4">
+                                    <select id="bulkTemplateSelect"
+                                        class="w-full px-4 py-3 bg-dark-bg/50 border border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
+                                        <option value="">-- Choose a template --</option>
+                                    </select>
+                                    <div id="templatePreview"
+                                        class="hidden p-4 bg-indigo-500/5 border-l-4 border-indigo-500 rounded-r-xl text-sm italic text-slate-400 whitespace-pre-line leading-relaxed shadow-sm">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Send -->
+                            <div class="space-y-4">
+                                <h3
+                                    class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center">
+                                    <span
+                                        class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] mr-2">3</span>
+                                    Execution
+                                </h3>
+                                <div class="bg-dark-bg/30 p-6 rounded-2xl border border-dark-border/30">
+                                    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                                        <button id="sendBulkBtn"
+                                            class="flex-grow py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-95"
+                                            disabled>
+                                            Start Campaigns
+                                        </button>
+                                        <button id="cancelBulkBtn"
+                                            class="hidden py-4 px-8 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 font-bold rounded-xl transition-all">
+                                            Kill Process
+                                        </button>
+                                    </div>
+
+                                    <div id="bulkProgress" class="hidden space-y-4 animate-in fade-in duration-500">
+                                        <div class="flex justify-between items-end mb-2">
+                                            <span id="progressText"
+                                                class="text-3xl font-black text-white italic tracking-tighter">0%</span>
+                                            <span id="progressDetails"
+                                                class="text-xs text-slate-500 font-bold uppercase tracking-widest">Processing...</span>
+                                        </div>
+                                        <div
+                                            class="w-full h-4 bg-slate-800 rounded-full overflow-hidden shadow-inner p-0.5 border border-slate-700">
+                                            <div id="progressFill"
+                                                class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-300 ease-out shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                                                style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
         </main>
+    </div>
+
+    <!-- Tooltip for Mobile Status -->
+    <div class="md:hidden fixed bottom-6 right-6 z-50">
+        <div class="w-4 h-4 rounded-full border-2 border-white shadow-lg" id="mobileStatusDot"></div>
     </div>
 
     <script src="app.js"></script>

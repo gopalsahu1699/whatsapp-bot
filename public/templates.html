@@ -4,74 +4,166 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Templates - Autommensor Bot</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Templates - Autommensor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#6366f1',
+                            dark: '#4f46e5',
+                        },
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .nav-link-active {
+            color: #6366f1;
+            border-bottom: 2px solid #6366f1;
+        }
+    </style>
 </head>
 
-<body>
-    <div class="dashboard">
+<body class="text-slate-100 font-sans min-h-screen">
+    <div class="dashboard pb-20">
         <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1>🤖 Autommensor</h1>
-                <nav class="nav-menu">
-                    <a href="dashboard.html" class="nav-link">Dashboard</a>
-                    <a href="templates.html" class="nav-link active">Templates</a>
-                    <a href="training.html" class="nav-link">AI Training</a>
-                </nav>
-                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        <header class="glass border-b border-dark-border sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-8">
+                        <h1
+                            class="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
+                            🤖 Autommensor
+                        </h1>
+                        <nav id="navMenu" class="hidden md:flex space-x-6">
+                            <a href="dashboard.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Dashboard</a>
+                            <a href="templates.html"
+                                class="nav-link text-sm font-medium hover:text-primary transition-colors py-5 nav-link-active">Templates</a>
+                            <a href="training.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">AI
+                                Training</a>
+                        </nav>
+                    </div>
+                    <button id="logoutBtn"
+                        class="px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+                </div>
             </div>
         </header>
 
         <!-- Main Content -->
-        <main class="main-content">
-            <!-- Template Management Section -->
-            <section class="card">
-                <h2>📝 Message Templates</h2>
-
-                <button id="addTemplateBtn" class="btn btn-primary mb-3">+ Add New Template</button>
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+            <section class="glass border border-dark-border rounded-2xl p-8 shadow-xl">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <span class="mr-3 text-2xl">📝</span> Message Templates
+                    </h2>
+                    <button id="addTemplateBtn"
+                        class="px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all transform active:scale-95">
+                        + Create New Template
+                    </button>
+                </div>
 
                 <!-- Add/Edit Template Form -->
-                <div id="templateForm" class="template-form" style="display: none;">
-                    <h3 id="formTitle">Add New Template</h3>
-                    <form id="templateFormElement">
+                <div id="templateForm"
+                    class="hidden animate-in slide-in-from-top duration-300 mb-12 bg-dark-bg/30 p-8 rounded-2xl border border-dark-border/40 shadow-inner">
+                    <h3 id="formTitle" class="text-lg font-bold mb-6 text-slate-300 uppercase tracking-widest">Add New
+                        Template</h3>
+                    <form id="templateFormElement" class="space-y-6">
                         <input type="hidden" id="templateId">
 
-                        <div class="form-group">
-                            <label for="templateName">Template Name</label>
-                            <input type="text" id="templateName" required>
+                        <div class="space-y-2">
+                            <label for="templateName" class="block text-sm font-semibold text-slate-400 ml-1">Template
+                                Name</label>
+                            <input type="text" id="templateName" required
+                                class="w-full px-4 py-3 bg-dark-bg/60 border border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder-slate-600">
                         </div>
 
-                        <div class="form-group">
-                            <label for="templateMessage">Message (use {{placeholder}} for variables)</label>
+                        <div class="space-y-2">
+                            <label for="templateMessage" class="block text-sm font-semibold text-slate-400 ml-1">Message
+                                (use {{placeholder}} for variables)</label>
                             <textarea id="templateMessage" rows="5" required
-                                placeholder="Hello {{name}}, welcome to Autommensor!"></textarea>
+                                placeholder="Hello {{name}}, welcome to Autommensor!"
+                                class="w-full px-4 py-3 bg-dark-bg/60 border border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder-slate-600 font-mono text-sm"></textarea>
                         </div>
 
-                        <div class="form-group">
-                            <label for="templateImage">Image (optional)</label>
-                            <input type="file" id="templateImage" accept="image/*">
-                            <div id="currentImage" style="display: none; margin-top: 10px;">
-                                <img id="currentImagePreview" style="max-width: 200px; max-height: 200px;">
-                                <button type="button" id="removeImageBtn" class="btn btn-danger btn-sm">Remove
-                                    Image</button>
+                        <div class="space-y-4">
+                            <label for="templateImage" class="block text-sm font-semibold text-slate-400 ml-1">Visual
+                                Asset (Optional Image)</label>
+                            <div class="flex flex-col space-y-4">
+                                <input type="file" id="templateImage" accept="image/*"
+                                    class="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer">
+
+                                <div id="currentImage"
+                                    class="hidden p-4 bg-dark-bg/80 rounded-2xl border border-dark-border/50 inline-block">
+                                    <div class="relative inline-block">
+                                        <img id="currentImagePreview"
+                                            class="max-w-[150px] rounded-lg shadow-md border border-slate-700">
+                                        <button type="button" id="removeImageBtn"
+                                            class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-lg transition-all">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <p class="text-[10px] text-slate-500 mt-2 font-bold uppercase text-center">Current
+                                        Image</p>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="form-actions">
-                            <button type="submit" class="btn btn-primary">Save Template</button>
-                            <button type="button" id="cancelTemplateBtn" class="btn btn-secondary">Cancel</button>
+                        <div class="flex gap-4 pt-4 border-t border-dark-border/30">
+                            <button type="submit"
+                                class="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/10 transition-all">
+                                Save Content
+                            </button>
+                            <button type="button" id="cancelTemplateBtn"
+                                class="px-8 py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl transition-all">
+                                Discard
+                            </button>
                         </div>
                     </form>
                 </div>
 
                 <!-- Templates List -->
-                <div id="templatesList" class="templates-list"></div>
+                <div id="templatesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Templates will be rendered here by JS -->
+                </div>
             </section>
         </main>
     </div>
 
     <script src="templates.js"></script>
+    <script>
+        // Adjust the templates render logic in memory or via minor intercept
+        // templates.js logic needs to handle the new card structure.
+        // I'll update templates.js next if needed, but the IDs and container are the same.
+    </script>
 </body>
 
 </html>
