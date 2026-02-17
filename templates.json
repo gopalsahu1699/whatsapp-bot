@@ -1,16 +1,42 @@
 [
   {
-    "id": "8991f082-66f9-40f4-9c82-dcf51848fc29",
-    "name": "test",
-    "message": "hello from autommensor",
-    "imagePath": "/uploads/images/1771336822776-5799adc7-2c46-40c2-aaa0-d57e23c03377.jpeg",
-    "createdAt": "2026-02-17T14:00:22.780Z"
+    "id": 1,
+    "name": "Smart Home Intro",
+    "message": "Hi {name}, 👋\r\n\r\nThis is Gopal from Automensor.\r\n\r\nWe help homeowners automate lights, AC, curtains & security systems – saving energy and adding convenience.\r\n\r\nWould you like a quick demo?\r\n\r\n📍 Check our work: automensor.com\r\n📱 Call/WhatsApp: +91-XXXXXXX\r\n📸 Instagram: @automensor\r\n\r\nReply YES!",
+    "imagePath": "/uploads/images/1771341685283-2a41d54b-df58-46c1-a5bf-e1e739253c3f.jpg",
+    "createdAt": "2026-02-17T12:00:00.000Z",
+    "updatedAt": "2026-02-17T15:21:25.286Z"
   },
   {
-    "id": "2cc6c295-e0cf-4b8f-834f-e9a0c6070040",
-    "name": "test 2",
-    "message": "hi temp 2",
-    "imagePath": "/uploads/images/1771338326074-341e4560-0eb7-425e-bfda-7658ada445d2.webp",
-    "createdAt": "2026-02-17T14:25:26.079Z"
+    "id": 2,
+    "name": "Special Offer",
+    "message": "Hello {name},\r\n\r\nLimited-time offer: Smart home automation setup at special rates!\r\n\r\nFree site visit + custom quote included.\r\n\r\nReply YES to know more!\r\n\r\n📍 automensor.com\r\n📱 +91-XXXXXXX\r\n📸 @automensor",
+    "imagePath": "/uploads/images/1771341691769-635d87cd-814d-48ac-b03d-fffdf42c157a.jpg",
+    "createdAt": "2026-02-17T12:05:00.000Z",
+    "updatedAt": "2026-02-17T15:21:31.770Z"
+  },
+  {
+    "id": 3,
+    "name": "Follow-Up Message",
+    "message": "Hi {name},\r\n\r\nJust following up on smart home automation.\r\n\r\nReady for a free consultation this week?\r\n\r\n📍 automensor.com\r\n📱 +91-XXXXXXX\r\n📸 @automensor\r\n\r\nLet me know!",
+    "imagePath": "/uploads/images/1771341700857-cc712eaf-7bc2-4bec-801d-d0c97cc36459.jpeg",
+    "createdAt": "2026-02-17T12:10:00.000Z",
+    "updatedAt": "2026-02-17T15:21:40.859Z"
+  },
+  {
+    "id": 4,
+    "name": "Site Visit Booking",
+    "message": "Hello {name},\r\n\r\nFree smart home demo visits in your area this week!\r\n\r\nPreferred date? Reply now.\r\n\r\n📍 Book: automensor.com\r\n📱 +91-XXXXXXX\r\n📸 @automensor",
+    "imagePath": "/uploads/images/1771341719678-3f5851b8-f1e4-452a-8819-751c51ed55bb.jpg",
+    "createdAt": "2026-02-17T12:15:00.000Z",
+    "updatedAt": "2026-02-17T15:21:59.682Z"
+  },
+  {
+    "id": 5,
+    "name": "Festival Offer",
+    "message": "Hi {name}, 🎉\r\n\r\nFestive special: Smart lights, AC & security at limited rates!\r\n\r\nFree quote? Reply now!\r\n\r\n📍 automensor.com\r\n📱 +91-XXXXXXX\r\n📸 @automensor",
+    "imagePath": "/uploads/images/1771341739761-10de01d1-8bc9-46a0-9428-595d719f445f.jpg",
+    "createdAt": "2026-02-17T12:20:00.000Z",
+    "updatedAt": "2026-02-17T15:22:19.763Z"
   }
 ]

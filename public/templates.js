@@ -29,10 +29,12 @@ function setupEventListeners() {
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
     // Templates
-    document.getElementById('addTemplateBtn').addEventListener('click', showTemplateForm);
-    document.getElementById('cancelTemplateBtn').addEventListener('click', hideTemplateForm);
+    document.getElementById('addTemplateBtn').addEventListener('click', () => showTemplateForm());
     document.getElementById('templateFormElement').addEventListener('submit', saveTemplate);
     document.getElementById('removeImageBtn')?.addEventListener('click', removeCurrentImage);
+
+    // Close modal on overlay click
+    document.getElementById('modalOverlay')?.addEventListener('click', hideTemplateForm);
 }
 
 // ==================== AUTHENTICATION ====================
@@ -94,8 +96,10 @@ function renderTemplates() {
 }
 
 function showTemplateForm(editMode = false) {
-    const formDiv = document.getElementById('templateForm');
-    formDiv.classList.remove('hidden');
+    const modal = document.getElementById('templateModal');
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent scrolling
+
     document.getElementById('formTitle').textContent = editMode ? 'Edit Template Content' : 'Add New Campaign Template';
     if (!editMode) {
         document.getElementById('templateFormElement').reset();
@@ -105,7 +109,8 @@ function showTemplateForm(editMode = false) {
 }
 
 function hideTemplateForm() {
-    document.getElementById('templateForm').classList.add('hidden');
+    document.getElementById('templateModal').classList.add('hidden');
+    document.body.style.overflow = 'auto'; // Restore scrolling
     document.getElementById('templateFormElement').reset();
 }
 
@@ -154,7 +159,7 @@ async function saveTemplate(e) {
 }
 
 async function editTemplate(id) {
-    const template = templates.find(t => t.id === id);
+    const template = templates.find(t => t.id == id);
     if (!template) return;
 
     document.getElementById('templateId').value = template.id;

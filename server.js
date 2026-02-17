@@ -232,7 +232,7 @@ app.put('/api/templates/:id', requireAuth, upload.single('image'), async (req, r
         const { name, message, removeImage } = req.body;
         const templates = await readTemplates();
 
-        const index = templates.findIndex(t => t.id === id);
+        const index = templates.findIndex(t => t.id == id);
         if (index === -1) {
             return res.status(404).json({ error: 'Template not found' });
         }
@@ -277,7 +277,7 @@ app.delete('/api/templates/:id', requireAuth, async (req, res) => {
         const { id } = req.params;
         const templates = await readTemplates();
 
-        const index = templates.findIndex(t => t.id === id);
+        const index = templates.findIndex(t => t.id == id);
         if (index === -1) {
             return res.status(404).json({ error: 'Template not found' });
         }
