@@ -35,6 +35,7 @@ async function startBot() {
     client = new Client({
         authStrategy: authStrategy,
         puppeteer: {
+            executablePath: process.env.CHROME_PATH || undefined,
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         }
     });
