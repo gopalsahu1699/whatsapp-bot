@@ -32,6 +32,20 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
+const os = require('os');
+
+// Separate storage for CSV files (Local storage, not Cloudinary)
+const csvStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, os.tmpdir());
+    },
+    filename: function (req, file, cb) {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    }
+});
+
+const csvUpload = multer({ storage: csvStorage });
+
 // Required for secure cookies behind Render/Heroku proxy
 app.set('trust proxy', 1);
 
@@ -297,7 +311,7 @@ app.delete('/api/templates/:id', requireAuth, async (req, res) => {
 
 // ==================== BULK MESSAGING ROUTES ====================
 
-app.post('/api/bulk/upload-csv', requireAuth, upload.single('csv'), async (req, res) => {
+app.post('/api/bulk/upload-csv', requireAuth, csvUpload.single('csv'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No file uploaded' });
