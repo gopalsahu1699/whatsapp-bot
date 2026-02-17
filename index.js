@@ -31,11 +31,30 @@ async function startBot() {
         authStrategy = new LocalAuth();
     }
 
+    // Detect local chrome installation on Render
+    let executablePath = process.env.CHROME_PATH || undefined;
+    if (!executablePath && process.env.RENDER) {
+        // Look for the chrome installed via render-build.sh
+        const fs = require('fs');
+        const path = require('path');
+        const baseDir = path.join(__dirname, '.puppeteer-cache/chrome');
+        if (fs.existsSync(baseDir)) {
+            // Traverse to find the actual executable
+            const dirs = fs.readdirSync(baseDir);
+            if (dirs.length > 0) {
+                const innerDir = path.join(baseDir, dirs[0]);
+                const platformDir = fs.readdirSync(innerDir)[0];
+                executablePath = path.join(innerDir, platformDir, 'chrome-linux/chrome');
+                console.log('Detected local Chrome at:', executablePath);
+            }
+        }
+    }
+
     // Initialize the client
     client = new Client({
         authStrategy: authStrategy,
         puppeteer: {
-            executablePath: process.env.CHROME_PATH || undefined,
+            executablePath: executablePath,
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         }
     });
