@@ -1,5 +1,6 @@
 const express = require('express');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
@@ -7,7 +8,6 @@ const QRCode = require('qrcode');
 const csv = require('csv-parser');
 const { createReadStream } = require('fs');
 const { v4: uuidv4 } = require('uuid');
-const MongoStore = require('connect-mongo');
 require('dotenv').config();
 
 const app = express();
@@ -48,7 +48,9 @@ const sessionConfig = {
 
 // Use MongoDB for session storage if available
 if (process.env.MONGODB_URI) {
-    sessionConfig.store = MongoStore.create({
+    // connect-mongo v4+ uses .create, but let's be super safe with the import
+    const storeFactory = (typeof MongoStore.create === 'function') ? MongoStore : MongoStore.default;
+    sessionConfig.store = storeFactory.create({
         mongoUrl: process.env.MONGODB_URI,
         ttl: 7 * 24 * 60 * 60 // 7 days
     });
