@@ -135,7 +135,7 @@ function updateTemplateSelect() {
     const select = document.getElementById('bulkTemplateSelect');
     if (!select) return;
     select.innerHTML = '<option value="">-- Select a template --</option>' +
-        templates.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+        templates.map(t => `<option value="${t._id}">${escapeHtml(t.name)}</option>`).join('');
 }
 
 // ==================== BULK MESSAGING ====================
@@ -196,7 +196,7 @@ function previewTemplate() {
         return;
     }
 
-    const template = templates.find(t => t.id === templateId);
+    const template = templates.find(t => t._id === templateId);
     if (!template) return;
 
     preview.innerHTML = `
