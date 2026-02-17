@@ -25,3 +25,6 @@ output.txt
 
 # Uploaded files
 public/uploads/
+
+# Puppeteer Cache (Installed on server during build)
+.puppeteer-cache/

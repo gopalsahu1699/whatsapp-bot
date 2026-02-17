@@ -49,9 +49,9 @@ async function startBot() {
                 if (stat.isDirectory()) {
                     const found = findChrome(fullPath);
                     if (found) return found;
-                } else if (file === 'chrome' || file === 'google-chrome') {
+                } else if (file === 'chrome' || file === 'google-chrome' || file === 'chrome.exe') {
                     // Check if it's the actual binary (not a script or directory)
-                    if (fullPath.includes('chrome-linux') || fullPath.includes('chrome-linux64')) {
+                    if (fullPath.includes('chrome-linux') || fullPath.includes('chrome-linux64') || fullPath.includes('chrome-win') || fullPath.includes('chrome-win64')) {
                         return fullPath;
                     }
                 }
