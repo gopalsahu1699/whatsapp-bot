@@ -33,20 +33,52 @@ async function startBot() {
 
     // Detect local chrome installation on Render
     let executablePath = process.env.CHROME_PATH || undefined;
-    if (!executablePath && process.env.RENDER) {
-        // Look for the chrome installed via render-build.sh
+    if (!executablePath && (process.env.RENDER || process.env.NODE_ENV === 'production')) {
         const fs = require('fs');
         const path = require('path');
-        const baseDir = path.join(__dirname, '.puppeteer-cache/chrome');
-        if (fs.existsSync(baseDir)) {
-            // Traverse to find the actual executable
-            const dirs = fs.readdirSync(baseDir);
-            if (dirs.length > 0) {
-                const innerDir = path.join(baseDir, dirs[0]);
-                const platformDir = fs.readdirSync(innerDir)[0];
-                executablePath = path.join(innerDir, platformDir, 'chrome-linux/chrome');
-                console.log('Detected local Chrome at:', executablePath);
+        const baseDir = path.join(__dirname, '.puppeteer-cache');
+
+        console.log('Searching for Chrome in:', baseDir);
+
+        function findChrome(dir) {
+            if (!fs.existsSync(dir)) return null;
+            const files = fs.readdirSync(dir);
+            for (const file of files) {
+                const fullPath = path.join(dir, file);
+                const stat = fs.statSync(fullPath);
+                if (stat.isDirectory()) {
+                    const found = findChrome(fullPath);
+                    if (found) return found;
+                } else if (file === 'chrome' || file === 'google-chrome') {
+                    // Check if it's the actual binary (not a script or directory)
+                    if (fullPath.includes('chrome-linux') || fullPath.includes('chrome-linux64')) {
+                        return fullPath;
+                    }
+                }
             }
+            return null;
+        }
+
+        executablePath = findChrome(baseDir);
+        if (executablePath) {
+            console.log('✅ Found Chrome executable at:', executablePath);
+            // Ensure it's executable
+            try { fs.chmodSync(executablePath, '755'); } catch (e) { }
+        } else {
+            console.error('❌ Could not find Chrome executable in .puppeteer-cache');
+            // List contents of .puppeteer-cache for debugging
+            try {
+                const listDir = (d, indent = '') => {
+                    if (!fs.existsSync(d)) return;
+                    const files = fs.readdirSync(d);
+                    files.forEach(f => {
+                        console.log(`${indent}${f}`);
+                        const p = path.join(d, f);
+                        if (fs.statSync(p).isDirectory()) listDir(p, indent + '  ');
+                    });
+                };
+                listDir(baseDir);
+            } catch (e) { }
         }
     }
 
