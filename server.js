@@ -7,10 +7,14 @@ const QRCode = require('qrcode');
 const csv = require('csv-parser');
 const { createReadStream } = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const MongoStore = require('connect-mongo');
 require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
+
+// Required for secure cookies behind Render/Heroku proxy
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(express.json());
@@ -30,17 +34,27 @@ if (isProduction && (!SESSION_SECRET || SESSION_SECRET.length < 32 || SESSION_SE
 }
 
 // Session configuration
-app.use(session({
+const sessionConfig = {
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
         secure: isProduction, // HTTPS only in production
         httpOnly: true, // Prevent XSS attacks
-        sameSite: 'strict', // CSRF protection
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        sameSite: isProduction ? 'none' : 'lax', // Needed for cross-domain cookies in production
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     }
-}));
+};
+
+// Use MongoDB for session storage if available
+if (process.env.MONGODB_URI) {
+    sessionConfig.store = MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI,
+        ttl: 7 * 24 * 60 * 60 // 7 days
+    });
+}
+
+app.use(session(sessionConfig));
 
 // File upload configuration
 const storage = multer.diskStorage({
