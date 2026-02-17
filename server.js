@@ -382,6 +382,12 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
                     phone = '91' + phone;
                 }
                 const chatId = phone + '@c.us';
+                const chat = await whatsappClient.getChatById(chatId);
+
+                // Simulate human behavior: Show 'typing...' for a few seconds
+                await chat.sendStateTyping();
+                const typingDelay = Math.floor(Math.random() * 3000) + 2000; // 2-5 seconds
+                await new Promise(resolve => setTimeout(resolve, typingDelay));
 
                 // Send message
                 await whatsappClient.sendMessage(chatId, message);
@@ -405,8 +411,8 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
                     percentage: Math.round(((sent + failed) / contacts.length) * 100)
                 })}\n\n`);
 
-                // Delay to avoid spam detection (2-5 seconds)
-                const delay = Math.floor(Math.random() * 3000) + 2000;
+                // Anti-Ban Delay: Simulate human pause between chats (10-25 seconds)
+                const delay = Math.floor(Math.random() * 15000) + 10000;
                 await new Promise(resolve => setTimeout(resolve, delay));
 
             } catch (error) {
