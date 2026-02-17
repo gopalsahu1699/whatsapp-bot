@@ -1,0 +1,16 @@
+[
+  {
+    "id": "8991f082-66f9-40f4-9c82-dcf51848fc29",
+    "name": "test",
+    "message": "hello from autommensor",
+    "imagePath": "/uploads/images/1771336822776-5799adc7-2c46-40c2-aaa0-d57e23c03377.jpeg",
+    "createdAt": "2026-02-17T14:00:22.780Z"
+  },
+  {
+    "id": "2cc6c295-e0cf-4b8f-834f-e9a0c6070040",
+    "name": "test 2",
+    "message": "hi temp 2",
+    "imagePath": "/uploads/images/1771338326074-341e4560-0eb7-425e-bfda-7658ada445d2.webp",
+    "createdAt": "2026-02-17T14:25:26.079Z"
+  }
+]

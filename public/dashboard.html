@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Autommensor Bot</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🤖 Autommensor</h1>
+                <nav class="nav-menu">
+                    <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                    <a href="templates.html" class="nav-link">Templates</a>
+                    <a href="training.html" class="nav-link">AI Training</a>
+                </nav>
+                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- WhatsApp Connection Section -->
+            <section class="card">
+                <h2>📱 WhatsApp Connection</h2>
+                <div id="whatsappStatus">
+                    <div class="status-indicator">
+                        <span class="status-dot" id="statusDot"></span>
+                        <span id="statusText">Checking...</span>
+                    </div>
+                    <div id="qrContainer" style="display: none;">
+                        <p>Scan this QR code with WhatsApp:</p>
+                        <img id="qrCode" alt="QR Code" />
+                    </div>
+                    <button id="disconnectBtn" class="btn btn-danger" style="display: none;">Disconnect</button>
+                </div>
+            </section>
+
+
+            <!-- Bulk Messaging Section -->
+            <section class="card">
+                <h2>📤 Bulk Messaging</h2>
+
+                <div class="bulk-steps">
+                    <!-- Step 1: Upload CSV -->
+                    <div class="step">
+                        <h3>Step 1: Upload Contacts (CSV)</h3>
+                        <p class="help-text">CSV format: name,phone,custom1,custom2,...</p>
+                        <a href="#" id="downloadSample" class="link">Download Sample CSV</a>
+
+                        <div class="form-group">
+                            <input type="file" id="csvFile" accept=".csv">
+                            <button id="uploadCsvBtn" class="btn btn-primary">Upload CSV</button>
+                        </div>
+
+                        <div id="csvStatus" class="status-message" style="display: none;"></div>
+                    </div>
+
+                    <!-- Step 2: Select Template -->
+                    <div class="step">
+                        <h3>Step 2: Select Template</h3>
+                        <select id="bulkTemplateSelect" class="form-control">
+                            <option value="">-- Select a template --</option>
+                        </select>
+                        <div id="templatePreview" class="template-preview" style="display: none;"></div>
+                    </div>
+
+                    <!-- Step 3: Send -->
+                    <div class="step">
+                        <h3>Step 3: Send Messages</h3>
+                        <button id="sendBulkBtn" class="btn btn-success" disabled>Send Bulk Messages</button>
+                        <button id="cancelBulkBtn" class="btn btn-danger" style="display: none;">Cancel</button>
+
+                        <div id="bulkProgress" class="progress-container" style="display: none;">
+                            <div class="progress-bar">
+                                <div id="progressFill" class="progress-fill"></div>
+                            </div>
+                            <div id="progressText" class="progress-text">0%</div>
+                            <div id="progressDetails" class="progress-details"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

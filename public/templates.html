@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Templates - Autommensor Bot</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🤖 Autommensor</h1>
+                <nav class="nav-menu">
+                    <a href="dashboard.html" class="nav-link">Dashboard</a>
+                    <a href="templates.html" class="nav-link active">Templates</a>
+                    <a href="training.html" class="nav-link">AI Training</a>
+                </nav>
+                <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Template Management Section -->
+            <section class="card">
+                <h2>📝 Message Templates</h2>
+
+                <button id="addTemplateBtn" class="btn btn-primary mb-3">+ Add New Template</button>
+
+                <!-- Add/Edit Template Form -->
+                <div id="templateForm" class="template-form" style="display: none;">
+                    <h3 id="formTitle">Add New Template</h3>
+                    <form id="templateFormElement">
+                        <input type="hidden" id="templateId">
+
+                        <div class="form-group">
+                            <label for="templateName">Template Name</label>
+                            <input type="text" id="templateName" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="templateMessage">Message (use {{placeholder}} for variables)</label>
+                            <textarea id="templateMessage" rows="5" required
+                                placeholder="Hello {{name}}, welcome to Autommensor!"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="templateImage">Image (optional)</label>
+                            <input type="file" id="templateImage" accept="image/*">
+                            <div id="currentImage" style="display: none; margin-top: 10px;">
+                                <img id="currentImagePreview" style="max-width: 200px; max-height: 200px;">
+                                <button type="button" id="removeImageBtn" class="btn btn-danger btn-sm">Remove
+                                    Image</button>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Save Template</button>
+                            <button type="button" id="cancelTemplateBtn" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Templates List -->
+                <div id="templatesList" class="templates-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="templates.js"></script>
+</body>
+
+</html>
