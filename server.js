@@ -364,6 +364,18 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
         let sent = 0;
         let failed = 0;
 
+        // Pre-load media if template has an image to avoid redundant loads in the loop
+        let cachedMedia = null;
+        if (template.imagePath) {
+            try {
+                const { MessageMedia } = require('whatsapp-web.js');
+                cachedMedia = await MessageMedia.fromUrl(template.imagePath);
+                console.log('Template media cached for bulk sending');
+            } catch (err) {
+                console.error('Failed to pre-load template media:', err.message);
+            }
+        }
+
         for (let i = 0; i < contacts.length; i++) {
             const contact = contacts[i];
 
@@ -371,7 +383,7 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
                 // Replace placeholders in message
                 const message = replacePlaceholders(template.message, contact);
 
-                // Format phone number (support both 'phone' and 'number' column names)
+                // Format phone number
                 let phoneNumber = contact.phone || contact.number;
                 if (!phoneNumber) {
                     throw new Error('No phone/number field found in CSV');
@@ -382,22 +394,14 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
                     phone = '91' + phone;
                 }
                 const chatId = phone + '@c.us';
-                const chat = await whatsappClient.getChatById(chatId);
 
-                // Simulate human behavior: Show 'typing...' for a few seconds
-                await chat.sendStateTyping();
-                const typingDelay = Math.floor(Math.random() * 3000) + 2000; // 2-5 seconds
-                await new Promise(resolve => setTimeout(resolve, typingDelay));
+                // Optimized path: If image exists, send it. If not, just send text.
+                // We send image first often or as separate message.
 
-                // Send message
-                await whatsappClient.sendMessage(chatId, message);
-
-                // Send image if template has one
-                if (template.imagePath) {
-                    const { MessageMedia } = require('whatsapp-web.js');
-                    // template.imagePath is now a Cloudinary URL
-                    const media = await MessageMedia.fromUrl(template.imagePath);
-                    await whatsappClient.sendMessage(chatId, media);
+                if (cachedMedia) {
+                    await whatsappClient.sendMessage(chatId, cachedMedia, { caption: message });
+                } else {
+                    await whatsappClient.sendMessage(chatId, message);
                 }
 
                 sent++;
@@ -411,8 +415,8 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
                     percentage: Math.round(((sent + failed) / contacts.length) * 100)
                 })}\n\n`);
 
-                // Anti-Ban Delay: Simulate human pause between chats (10-25 seconds)
-                const delay = Math.floor(Math.random() * 15000) + 10000;
+                // Reduced Anti-Ban Delay: (4-8 seconds is generally safe for 50 messages)
+                const delay = Math.floor(Math.random() * 4000) + 4000;
                 await new Promise(resolve => setTimeout(resolve, delay));
 
             } catch (error) {
