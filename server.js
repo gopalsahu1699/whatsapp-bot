@@ -23,9 +23,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction && (!SESSION_SECRET || SESSION_SECRET.length < 32 || SESSION_SECRET.includes('change-in-production') || SESSION_SECRET === 'fallback-secret-key')) {
     console.error('\n⚠️  SECURITY WARNING: Weak or default SESSION_SECRET detected in production!');
+    console.error(`Debug Info: Secret Length: ${SESSION_SECRET ? SESSION_SECRET.length : 0}, Is Default: ${SESSION_SECRET === 'fallback-secret-key'}`);
     console.error('Generate a strong secret with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
     console.error('Add it to your .env file as SESSION_SECRET=<generated-secret>\n');
-    process.exit(1); // Exit in production to prevent security risk
+    process.exit(1);
 }
 
 // Session configuration
