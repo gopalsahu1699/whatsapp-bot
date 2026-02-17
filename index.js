@@ -97,7 +97,8 @@ async function startBot() {
                 '--no-first-run',
                 '--no-zygote',
                 '--single-process', // Highly critical for low-memory environments
-                '--disable-gpu'
+                '--disable-gpu',
+                '--js-flags="--max-old-space-size=400"' // Limit browser JS memory to 400MB
             ],
             headless: true
         }
