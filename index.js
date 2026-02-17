@@ -177,11 +177,11 @@ async function startBot() {
         }
     });
 
-    // Initialize the client
-    client.initialize();
-
     // Start the dashboard server
     startServer(client);
+
+    // Initialize the client
+    client.initialize();
 }
 
 startBot();

@@ -106,17 +106,31 @@ function setWhatsAppClient(client) {
     client.on('qr', async (qr) => {
         qrCodeData = await QRCode.toDataURL(qr);
         isClientReady = false;
+        console.log('QR Code generated and ready for scan');
+    });
+
+    client.on('authenticated', () => {
+        console.log('WhatsApp Authenticated');
+        qrCodeData = null; // Clear QR as soon as authenticated
     });
 
     client.on('ready', () => {
         isClientReady = true;
         qrCodeData = null;
+        console.log('WhatsApp Client is Ready');
     });
 
     client.on('disconnected', () => {
         isClientReady = false;
         qrCodeData = null;
+        console.log('WhatsApp Client Disconnected');
     });
+
+    // Check if it's already in a ready state (though unlikely with current order)
+    if (client.info && client.info.wid) {
+        isClientReady = true;
+        qrCodeData = null;
+    }
 }
 
 // Authentication middleware
