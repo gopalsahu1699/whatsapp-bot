@@ -1,6 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const fs = require('fs');
-const path = require('path');
+const { BusinessInfo } = require('./models');
 
 // Load API key from environment variables for security
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -9,17 +8,10 @@ const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 async function getAIResponse(userMessage) {
     try {
-        // Read business information dynamically from the JSON file
-        const businessInfoPath = path.join(__dirname, 'business_info.json');
-        let businessData = {};
-        try {
-            const fileContent = fs.readFileSync(businessInfoPath, 'utf8');
-            businessData = JSON.parse(fileContent);
-        } catch (err) {
-            console.error("Error reading business_info.json:", err);
-        }
+        // Fetch business info from MongoDB
+        const businessData = await BusinessInfo.findOne() || {};
 
-        // Construct context from structured data
+        // Construct context from data
         const contextLines = [
             `My Business Name: Autommensor`,
             `About Us:\n${businessData.aboutUs || ''}`,

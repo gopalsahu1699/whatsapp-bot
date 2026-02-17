@@ -8,10 +8,29 @@ const QRCode = require('qrcode');
 const csv = require('csv-parser');
 const { createReadStream } = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { Template, BusinessInfo } = require('./models');
 require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
+
+// Cloudinary Configuration
+cloudinary.config({
+    cloudinary_url: process.env.CLOUDINARY_URL
+});
+
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'whatsapp-bot',
+        allowed_formats: ['jpg', 'png', 'jpeg'],
+        transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
+    },
+});
+
+const upload = multer({ storage: storage });
 
 // Required for secure cookies behind Render/Heroku proxy
 app.set('trust proxy', 1);
@@ -48,7 +67,6 @@ const sessionConfig = {
 
 // Use MongoDB for session storage if available
 if (process.env.MONGODB_URI) {
-    // connect-mongo v4+ uses .create, but let's be super safe with the import
     const storeFactory = (typeof MongoStore.create === 'function') ? MongoStore : MongoStore.default;
     sessionConfig.store = storeFactory.create({
         mongoUrl: process.env.MONGODB_URI,
@@ -57,42 +75,6 @@ if (process.env.MONGODB_URI) {
 }
 
 app.use(session(sessionConfig));
-
-// File upload configuration
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadPath = file.fieldname === 'image'
-            ? 'public/uploads/images'
-            : 'public/uploads/csv';
-        cb(null, uploadPath);
-    },
-    filename: function (req, file, cb) {
-        const uniqueName = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
-        cb(null, uniqueName);
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-    fileFilter: (req, file, cb) => {
-        if (file.fieldname === 'image') {
-            if (file.mimetype.startsWith('image/')) {
-                cb(null, true);
-            } else {
-                cb(new Error('Only image files are allowed'));
-            }
-        } else if (file.fieldname === 'csv') {
-            if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
-                cb(null, true);
-            } else {
-                cb(new Error('Only CSV files are allowed'));
-            }
-        } else {
-            cb(null, true);
-        }
-    }
-});
 
 // WhatsApp client (will be set from index.js)
 let whatsappClient = null;
@@ -120,14 +102,25 @@ function setWhatsAppClient(client) {
         console.log('WhatsApp Client is Ready');
     });
 
+    client.on('auth_failure', (msg) => {
+        console.error('WhatsApp Auth Failure:', msg);
+        qrCodeData = null;
+        isClientReady = false;
+    });
+
+    client.on('loading_screen', (percent, message) => {
+        console.log(`WhatsApp Loading: ${percent}% - ${message}`);
+    });
+
     client.on('disconnected', () => {
         isClientReady = false;
         qrCodeData = null;
         console.log('WhatsApp Client Disconnected');
     });
 
-    // Check if it's already in a ready state (though unlikely with current order)
+    // Check if it's already in a ready state
     if (client.info && client.info.wid) {
+        console.log('WhatsApp detected as already ready on startup');
         isClientReady = true;
         qrCodeData = null;
     }
@@ -140,20 +133,6 @@ function requireAuth(req, res, next) {
     } else {
         res.status(401).json({ error: 'Unauthorized' });
     }
-}
-
-// Helper functions
-async function readTemplates() {
-    try {
-        const data = await fs.readFile('templates.json', 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        return [];
-    }
-}
-
-async function writeTemplates(templates) {
-    await fs.writeFile('templates.json', JSON.stringify(templates, null, 2));
 }
 
 function replacePlaceholders(template, data) {
@@ -196,6 +175,12 @@ app.get('/api/check-auth', (req, res) => {
 // ==================== WHATSAPP ROUTES ====================
 
 app.get('/api/whatsapp/status', requireAuth, (req, res) => {
+    // Proactive check: If the flag is false but client info exists, we are connected
+    if (!isClientReady && whatsappClient && whatsappClient.info && whatsappClient.info.wid) {
+        isClientReady = true;
+        qrCodeData = null;
+    }
+
     res.json({
         connected: isClientReady,
         hasQR: qrCodeData !== null
@@ -228,7 +213,7 @@ app.post('/api/whatsapp/disconnect', requireAuth, async (req, res) => {
 
 app.get('/api/templates', requireAuth, async (req, res) => {
     try {
-        const templates = await readTemplates();
+        const templates = await Template.find().sort({ createdAt: -1 });
         res.json(templates);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -238,19 +223,15 @@ app.get('/api/templates', requireAuth, async (req, res) => {
 app.post('/api/templates', requireAuth, upload.single('image'), async (req, res) => {
     try {
         const { name, message } = req.body;
-        const templates = await readTemplates();
 
-        const newTemplate = {
-            id: uuidv4(),
+        const newTemplate = new Template({
             name,
             message,
-            imagePath: req.file ? `/uploads/images/${req.file.filename}` : null,
-            createdAt: new Date().toISOString()
-        };
+            imagePath: req.file ? req.file.path : null, // Cloudinary URL
+            cloudinaryId: req.file ? req.file.filename : null // Cloudinary public ID
+        });
 
-        templates.push(newTemplate);
-        await writeTemplates(templates);
-
+        await newTemplate.save();
         res.json(newTemplate);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -261,43 +242,33 @@ app.put('/api/templates/:id', requireAuth, upload.single('image'), async (req, r
     try {
         const { id } = req.params;
         const { name, message, removeImage } = req.body;
-        const templates = await readTemplates();
 
-        const index = templates.findIndex(t => t.id == id);
-        if (index === -1) {
+        const template = await Template.findById(id);
+        if (!template) {
             return res.status(404).json({ error: 'Template not found' });
         }
 
-        // Handle image update
-        let imagePath = templates[index].imagePath;
+        template.name = name;
+        template.message = message;
+
         if (req.file) {
-            // Delete old image if exists
-            if (imagePath) {
-                try {
-                    await fs.unlink(path.join('public', imagePath));
-                } catch (err) { }
+            // Delete old image from Cloudinary if exists
+            if (template.cloudinaryId) {
+                try { await cloudinary.uploader.destroy(template.cloudinaryId); } catch (err) { }
             }
-            imagePath = `/uploads/images/${req.file.filename}`;
+            template.imagePath = req.file.path;
+            template.cloudinaryId = req.file.filename;
         } else if (removeImage === 'true') {
-            // Delete old image
-            if (imagePath) {
-                try {
-                    await fs.unlink(path.join('public', imagePath));
-                } catch (err) { }
+            if (template.cloudinaryId) {
+                try { await cloudinary.uploader.destroy(template.cloudinaryId); } catch (err) { }
             }
-            imagePath = null;
+            template.imagePath = null;
+            template.cloudinaryId = null;
         }
 
-        templates[index] = {
-            ...templates[index],
-            name,
-            message,
-            imagePath,
-            updatedAt: new Date().toISOString()
-        };
-
-        await writeTemplates(templates);
-        res.json(templates[index]);
+        template.updatedAt = Date.now();
+        await template.save();
+        res.json(template);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -306,23 +277,18 @@ app.put('/api/templates/:id', requireAuth, upload.single('image'), async (req, r
 app.delete('/api/templates/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const templates = await readTemplates();
+        const template = await Template.findById(id);
 
-        const index = templates.findIndex(t => t.id == id);
-        if (index === -1) {
+        if (!template) {
             return res.status(404).json({ error: 'Template not found' });
         }
 
-        // Delete associated image
-        if (templates[index].imagePath) {
-            try {
-                await fs.unlink(path.join('public', templates[index].imagePath));
-            } catch (err) { }
+        // Delete associated image from Cloudinary
+        if (template.cloudinaryId) {
+            try { await cloudinary.uploader.destroy(template.cloudinaryId); } catch (err) { }
         }
 
-        templates.splice(index, 1);
-        await writeTemplates(templates);
-
+        await Template.findByIdAndDelete(id);
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -370,8 +336,7 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'WhatsApp not connected' });
         }
 
-        const templates = await readTemplates();
-        const template = templates.find(t => t.id === templateId);
+        const template = await Template.findById(templateId);
 
         if (!template) {
             return res.status(404).json({ error: 'Template not found' });
@@ -410,7 +375,8 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
                 // Send image if template has one
                 if (template.imagePath) {
                     const { MessageMedia } = require('whatsapp-web.js');
-                    const media = MessageMedia.fromFilePath(path.join('public', template.imagePath));
+                    // template.imagePath is now a Cloudinary URL
+                    const media = await MessageMedia.fromUrl(template.imagePath);
                     await whatsappClient.sendMessage(chatId, media);
                 }
 
@@ -464,30 +430,37 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
 
 app.get('/api/training/data', requireAuth, async (req, res) => {
     try {
-        const filePath = path.join(__dirname, 'business_info.json');
-        const fileContent = await fs.readFile(filePath, 'utf8');
-        res.json(JSON.parse(fileContent));
+        let trainingData = await BusinessInfo.findOne();
+        if (!trainingData) {
+            // Return empty structure if none exists
+            trainingData = {
+                aboutUs: '',
+                products: '',
+                faq: '',
+                refundPolicy: '',
+                contact: ''
+            };
+        }
+        res.json(trainingData);
     } catch (error) {
-        // If file doesn't exist, return empty structure
-        res.json({
-            aboutUs: '',
-            products: '',
-            faq: '',
-            refundPolicy: '',
-            contact: ''
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
 app.post('/api/training/data', requireAuth, async (req, res) => {
     try {
-        const trainingData = req.body;
-        if (!trainingData || typeof trainingData !== 'object') {
-            return res.status(400).json({ error: 'Invalid data format' });
+        const data = req.body;
+        let trainingData = await BusinessInfo.findOne();
+
+        if (trainingData) {
+            Object.assign(trainingData, data);
+            trainingData.updatedAt = Date.now();
+            await trainingData.save();
+        } else {
+            trainingData = new BusinessInfo(data);
+            await trainingData.save();
         }
 
-        const filePath = path.join(__dirname, 'business_info.json');
-        await fs.writeFile(filePath, JSON.stringify(trainingData, null, 2), 'utf8');
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
