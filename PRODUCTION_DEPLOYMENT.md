@@ -184,6 +184,33 @@ async function loadSecrets() {
 }
 ```
 
+#### **Railway (Recommended)**
+
+Railway is highly recommended for this bot as it provides excellent support for Puppeteer and Chromium dependencies out-of-the-box.
+
+1. **Connect Repository**: 
+   - Go to [Railway](https://railway.app/) and create a new project.
+   - Connect your GitHub repository.
+
+2. **Configuration**:
+   - The project includes a `railway.json` file which tells Railway to use Nixpacks.
+   - Nixpacks will automatically detect `puppeteer` in `package.json` and install the necessary system dependencies (Chromium, etc.).
+
+3. **Environment Variables**:
+   Add the following variables in the Railway dashboard:
+   - `MONGODB_URI`: Your MongoDB connection string (Required for session persistence).
+   - `GEMINI_API_KEY`: Your Gemini API key.
+   - `NVIDIA_API_KEY`: Your NVIDIA API key (if using).
+   - `DASHBOARD_USERNAME`: Your admin username.
+   - `DASHBOARD_PASSWORD`: Your admin password.
+   - `SESSION_SECRET`: A strong 64-character secret.
+   - `CLOUDINARY_URL`: Your Cloudinary connection string.
+   - `NODE_ENV`: `production`
+
+4. **Deployment**:
+   - Railway will automatically deploy when you push to your main branch.
+   - Ensure the `HEARTBEAT_PATH` (or healthcheck) is set to `/` as configured in `railway.json`.
+
 ---
 
 ### Option 3: Docker Deployment

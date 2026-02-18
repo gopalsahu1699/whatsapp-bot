@@ -65,7 +65,7 @@ async function startBot() {
     }
 
     let executablePath = process.env.CHROME_PATH || undefined;
-    if (!executablePath && (process.env.RENDER || process.env.NODE_ENV === 'production')) {
+    if (!executablePath && (process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.NODE_ENV === 'production' || process.env.PORT)) {
         const fs = require('fs');
         const path = require('path');
         const baseDir = path.join(__dirname, '.puppeteer-cache');
