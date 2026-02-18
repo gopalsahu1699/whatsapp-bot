@@ -96,7 +96,12 @@ async function startBot() {
     // --- Events ---
     client.on('qr', (qr) => {
         qrcode.generate(qr, { small: true });
-        console.log('New QR Code generated.');
+        console.log('\n--- WHATSAPP QR CODE ---');
+        console.log('1. Scan the QR code above in your terminal (if it looks okay)');
+        console.log('2. OR scan it via the Dashboard for better visibility:');
+        const dashboardUrl = process.env.RAILWAY_STATIC_URL ? `https://${process.env.RAILWAY_STATIC_URL}` : `http://localhost:${process.env.PORT || 3000}`;
+        console.log(`👉 Dashboard URL: ${dashboardUrl}`);
+        console.log('------------------------\n');
     });
 
     client.on('authenticated', () => {
