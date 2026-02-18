@@ -512,7 +512,7 @@ function startServer(client) {
         const APP_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
         if (APP_URL.includes('onrender.com')) {
             console.log(`📡 Keep-Alive initialized for: ${APP_URL}`);
-            // Ping every 10 minutes
+            // Ping every 5 minutes
             setInterval(async () => {
                 try {
                     const fetch = (await import('node-fetch')).default;
@@ -521,7 +521,7 @@ function startServer(client) {
                 } catch (err) {
                     console.error('❌ Keep-Alive Ping failed:', err.message);
                 }
-            }, 10 * 60 * 1000); // 10 minutes
+            }, 5 * 60 * 1000); // 5 minutes
         }
     });
 }

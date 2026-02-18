@@ -4,8 +4,8 @@ const { BusinessInfo } = require('./models');
 // Load API key from environment variables for security
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Use the standard model identifier
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// Use the standard model identifier from the available models list
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 async function getAIResponse(userMessage) {
     try {
