@@ -4,7 +4,8 @@ const { BusinessInfo } = require('./models');
 // Load API key from environment variables for security
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+// Use the standard model identifier
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 async function getAIResponse(userMessage) {
     try {
@@ -37,12 +38,23 @@ async function getAIResponse(userMessage) {
         `;
 
         const result = await model.generateContent(prompt);
+
+        if (!result || !result.response) {
+            throw new Error("Empty response from Gemini API");
+        }
+
         const response = await result.response;
         const text = response.text();
-        return text;
+        return text || "I'm listening, but I couldn't formulate a response. Could you rephrase that?";
 
     } catch (error) {
         console.error("Error generating AI response:", error);
+
+        // Handle specific error cases if needed
+        if (error.message && error.message.includes('model not found')) {
+            return "Bot configuration error: AI model not found. Please contact the administrator.";
+        }
+
         return "Sorry, I'm having trouble thinking right now. Please try again later.";
     }
 }

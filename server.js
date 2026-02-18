@@ -395,6 +395,15 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
                 }
                 const chatId = phone + '@c.us';
 
+                // Human-like behavior: Simulate typing for 5 seconds
+                try {
+                    const chat = await whatsappClient.getChatById(chatId);
+                    await chat.sendStateTyping();
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                } catch (typingErr) {
+                    console.warn(`Could not simulate typing for ${phone}:`, typingErr.message);
+                }
+
                 // Optimized path: If image exists, send it. If not, just send text.
                 // We send image first often or as separate message.
 
@@ -498,6 +507,22 @@ function startServer(client) {
 
     app.listen(PORT, () => {
         console.log(`\n🚀 Dashboard server running at http://localhost:${PORT}\n`);
+
+        // Start Keep-Alive to prevent Render from sleeping
+        const APP_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+        if (APP_URL.includes('onrender.com')) {
+            console.log(`📡 Keep-Alive initialized for: ${APP_URL}`);
+            // Ping every 10 minutes
+            setInterval(async () => {
+                try {
+                    const fetch = (await import('node-fetch')).default;
+                    await fetch(APP_URL);
+                    console.log(`🌱 Keep-Alive: Pinged ${APP_URL} at ${new Date().toISOString()}`);
+                } catch (err) {
+                    console.error('❌ Keep-Alive Ping failed:', err.message);
+                }
+            }, 10 * 60 * 1000); // 10 minutes
+        }
     });
 }
 

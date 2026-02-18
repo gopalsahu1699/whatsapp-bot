@@ -18,6 +18,7 @@ async function startBot() {
             await mongoose.connect(process.env.MONGODB_URI);
             const store = new MongoStore({ mongoose: mongoose });
             authStrategy = new RemoteAuth({
+                clientId: 'whatsapp-bot',
                 store: store,
                 backupSyncIntervalMs: 300000
             });
