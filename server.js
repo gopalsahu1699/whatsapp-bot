@@ -209,15 +209,14 @@ app.get('/api/whatsapp/qr', requireAuth, (req, res) => {
     }
 });
 
-app.post('/api/whatsapp/disconnect', requireAuth, async (req, res) => {
+app.post('/api/whatsapp/restart', requireAuth, async (req, res) => {
     try {
-        if (whatsappClient) {
-            await whatsappClient.destroy();
-            isClientReady = false;
-            res.json({ success: true });
-        } else {
-            res.status(400).json({ error: 'Client not initialized' });
-        }
+        const { restartBot } = require('./index');
+        // Don't await because it might take a while, just trigger it
+        restartBot();
+        isClientReady = false;
+        qrCodeData = null;
+        res.json({ success: true, message: 'Restarting WhatsApp client...' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

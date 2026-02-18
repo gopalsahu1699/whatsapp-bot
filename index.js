@@ -7,16 +7,47 @@ const mongoose = require('mongoose');
 const { startServer } = require('./server');
 
 let client;
+let isInitializing = false;
+
+// Initialize the client
+function createClient(executablePath, authStrategy) {
+    return new Client({
+        authStrategy: authStrategy,
+        authTimeoutMs: 60000,
+        qrMaxRetries: 5,
+        puppeteer: {
+            executablePath: executablePath,
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',
+                '--disable-gpu',
+                '--no-default-browser-check',
+                '--disable-extensions',
+                '--js-flags="--max-old-space-size=400"'
+            ],
+            headless: true
+        }
+    });
+}
 
 async function startBot() {
+    if (isInitializing) return;
+    isInitializing = true;
+    
     console.log('Starting bot...');
 
     let authStrategy;
-
     if (process.env.MONGODB_URI) {
         console.log('Connecting to MongoDB for session storage...');
         try {
-            await mongoose.connect(process.env.MONGODB_URI);
+            if (mongoose.connection.readyState === 0) {
+                await mongoose.connect(process.env.MONGODB_URI);
+            }
             const store = new MongoStore({ mongoose: mongoose });
             authStrategy = new RemoteAuth({
                 clientId: 'whatsapp-bot',
@@ -33,15 +64,12 @@ async function startBot() {
         authStrategy = new LocalAuth();
     }
 
-    // Detect local chrome installation on Render
     let executablePath = process.env.CHROME_PATH || undefined;
     if (!executablePath && (process.env.RENDER || process.env.NODE_ENV === 'production')) {
         const fs = require('fs');
         const path = require('path');
         const baseDir = path.join(__dirname, '.puppeteer-cache');
-
-        console.log('Searching for Chrome in:', baseDir);
-
+        
         function findChrome(dir) {
             if (!fs.existsSync(dir)) return null;
             const files = fs.readdirSync(dir);
@@ -52,7 +80,6 @@ async function startBot() {
                     const found = findChrome(fullPath);
                     if (found) return found;
                 } else if (file === 'chrome' || file === 'google-chrome' || file === 'chrome.exe') {
-                    // Check if it's the actual binary (not a script or directory)
                     if (fullPath.includes('chrome-linux') || fullPath.includes('chrome-linux64') || fullPath.includes('chrome-win') || fullPath.includes('chrome-win64')) {
                         return fullPath;
                     }
@@ -62,92 +89,39 @@ async function startBot() {
         }
 
         executablePath = findChrome(baseDir);
-        if (executablePath) {
-            console.log('✅ Found Chrome executable at:', executablePath);
-            // Ensure it's executable
-            try { fs.chmodSync(executablePath, '755'); } catch (e) { }
-        } else {
-            console.error('❌ Could not find Chrome executable in .puppeteer-cache');
-            // List contents of .puppeteer-cache for debugging
-            try {
-                const listDir = (d, indent = '') => {
-                    if (!fs.existsSync(d)) return;
-                    const files = fs.readdirSync(d);
-                    files.forEach(f => {
-                        console.log(`${indent}${f}`);
-                        const p = path.join(d, f);
-                        if (fs.statSync(p).isDirectory()) listDir(p, indent + '  ');
-                    });
-                };
-                listDir(baseDir);
-            } catch (e) { }
-        }
     }
 
-    // Initialize the client
-    client = new Client({
-        authStrategy: authStrategy,
-        authTimeoutMs: 60000, // Increase timeout to 60s for slow connections
-        qrMaxRetries: 5,
-        puppeteer: {
-            executablePath: executablePath,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--single-process', // Highly critical for low-memory environments
-                '--disable-gpu',
-                '--js-flags="--max-old-space-size=400"' // Limit browser JS memory to 400MB
-            ],
-            headless: true
-        }
-    });
+    client = createClient(executablePath, authStrategy);
 
-    // Generate QR code for authentication
+    // --- Events ---
     client.on('qr', (qr) => {
         qrcode.generate(qr, { small: true });
-        console.log('Scan the QR code above with your WhatsApp app.');
+        console.log('New QR Code generated.');
     });
 
-    // Log when the client fails to authenticate
     client.on('auth_failure', msg => {
         console.error('AUTHENTICATION FAILURE', msg);
     });
 
-    // Log when the client is ready
     client.on('ready', () => {
         console.log('Client is ready!');
     });
 
-    client.on('remote_session_saved', () => {
-        console.log('Session saved to remote storage');
+    client.on('disconnected', async (reason) => {
+        console.log('Client was logged out', reason);
+        // Do not auto-restart here to avoid infinite loops, let the dashboard handle it
     });
 
-    // --- MESSAGE QUEUEING (One chat at a time) ---
+    // --- MESSAGE QUEUEING ---
     const chatQueues = new Map();
 
     async function processMessage(msg) {
         try {
-            console.log(`PROCESSING MESSAGE: ${msg.body} from ${msg.from}`);
-
-            // Ignore status updates/broadcasts
-            if (msg.from === 'status@broadcast') {
-                return;
-            }
-
+            if (msg.from === 'status@broadcast') return;
             const chat = await msg.getChat();
-
-            // 1. "Reading" Delay (Simulate human reading time: 1-2 seconds)
             const readingDelay = Math.floor(Math.random() * 1000) + 1000;
             await new Promise(resolve => setTimeout(resolve, readingDelay));
-
-            // 2. Start Typing (Indicator appears on WhatsApp)
             await chat.sendStateTyping();
-
-            // --- COMMANDS ---
 
             if (msg.body === '!ping') {
                 await msg.reply('pong');
@@ -155,11 +129,7 @@ async function startBot() {
             }
 
             if (msg.body === '!help') {
-                await msg.reply(`*Bot Commands*\n\n` +
-                    `!ping - Check if bot is alive\n` +
-                    `!help - Show this menu\n` +
-                    `!sticker - Reply to an image/video to make a sticker\n` +
-                    `\n*Ask me anything about our business!*`);
+                await msg.reply(`*Bot Commands*\n\n!ping - Check bot\n!help - Show menu\n!sticker - Create sticker\n\n*Ask me anything about our business!*`);
                 return;
             }
 
@@ -169,25 +139,17 @@ async function startBot() {
                         const media = await msg.downloadMedia();
                         await client.sendMessage(msg.from, media, { sendMediaAsSticker: true });
                     } catch (err) {
-                        console.error('Error creating sticker:', err);
                         await msg.reply('Error creating sticker.');
                     }
                 } else {
-                    await msg.reply('Please send an image or video with the caption !sticker');
+                    await msg.reply('Please send an image or video with !sticker');
                 }
                 return;
             }
 
-            // 3. AI Response Generation (Typing continues during this time)
             const aiResponse = await getAIResponse(msg.body);
-
-            // 4. "Thinking/Typing" Delay (Simulate typing speed based on message length)
-            // Approx 0.05 - 0.1s per character
             const typingTime = Math.min(Math.max(aiResponse.length * 50, 2000), 7000);
-            console.log(`Typing for ${typingTime}ms...`);
             await new Promise(resolve => setTimeout(resolve, typingTime));
-
-            // 5. Send the reply
             await msg.reply(aiResponse);
 
         } catch (error) {
@@ -195,35 +157,56 @@ async function startBot() {
         }
     }
 
-    // Listen for incoming messages
     client.on('message', async msg => {
         const chatId = msg.from;
-
-        // Get existing queue for this chat or start a fresh one
         const previousTask = chatQueues.get(chatId) || Promise.resolve();
-
-        // Chain the new message processing to the previous task
         const currentTask = previousTask
             .then(() => processMessage(msg))
             .catch(err => console.error(`Queue error for ${chatId}:`, err))
             .finally(() => {
-                // Remove from map if this is still the latest task in queue
                 if (chatQueues.get(chatId) === currentTask) {
                     chatQueues.delete(chatId);
                 }
             });
-
         chatQueues.set(chatId, currentTask);
     });
 
-    // Start the dashboard server
-    startServer(client);
+    // Start the dashboard server (only once)
+    const { setWhatsAppClient } = require('./server');
+    setWhatsAppClient(client);
+    
+    if (!global.serverStarted) {
+        startServer(client);
+        global.serverStarted = true;
+    }
 
-    // Initialize the client
-    client.initialize();
+    try {
+        await client.initialize();
+    } catch (err) {
+        console.error('Failed to initialize client:', err);
+    } finally {
+        isInitializing = false;
+    }
+}
+
+async function restartBot() {
+    console.log('🔄 Restarting WhatsApp Bot...');
+    if (client) {
+        try {
+            await client.destroy();
+            console.log('Previous client destroyed.');
+        } catch (err) {
+            console.warn('Error destroying client:', err.message);
+        }
+    }
+    client = null;
+    await startBot();
 }
 
 startBot();
 
-// Export function for potential future use (though we start it here)
-module.exports = { getClient: () => client };
+module.exports = { 
+    getClient: () => client,
+    restartBot: restartBot
+};
+

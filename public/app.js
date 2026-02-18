@@ -34,6 +34,8 @@ function setupEventListeners() {
 
     // WhatsApp
     document.getElementById('disconnectBtn').addEventListener('click', disconnectWhatsApp);
+    document.getElementById('restartBotBtn').addEventListener('click', restartWhatsApp);
+    document.getElementById('regenQrBtn').addEventListener('click', restartWhatsApp);
 
     // Bulk messaging
     document.getElementById('uploadCsvBtn').addEventListener('click', uploadCSV);
@@ -101,6 +103,36 @@ async function loadQRCode() {
         }
     } catch (error) {
         console.error('Failed to load QR code:', error);
+    }
+}
+
+async function restartWhatsApp() {
+    const btn = document.getElementById('restartBotBtn');
+    const regenBtn = document.getElementById('regenQrBtn');
+    const originalText = btn.textContent;
+
+    if (!confirm('This will restart the WhatsApp connection. Continue?')) return;
+
+    try {
+        btn.disabled = true;
+        regenBtn.disabled = true;
+        btn.textContent = 'Restarting...';
+
+        const response = await fetch('/api/whatsapp/restart', { method: 'POST' });
+        const data = await response.json();
+
+        if (data.success) {
+            // Force status check
+            await loadWhatsAppStatus();
+        } else {
+            throw new Error(data.error || 'Failed to restart');
+        }
+    } catch (error) {
+        alert('Restart failed: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        regenBtn.disabled = false;
+        btn.textContent = originalText;
     }
 }
 
