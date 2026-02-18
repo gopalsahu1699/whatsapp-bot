@@ -125,10 +125,12 @@ async function startBot() {
         console.log('Session saved to remote storage');
     });
 
-    // Listen for incoming messages
-    client.on('message', async msg => {
+    // --- MESSAGE QUEUEING (One chat at a time) ---
+    const chatQueues = new Map();
+
+    async function processMessage(msg) {
         try {
-            console.log(`MESSAGE RECEIVED: ${msg.body} from ${msg.from}`);
+            console.log(`PROCESSING MESSAGE: ${msg.body} from ${msg.from}`);
 
             // Ignore status updates/broadcasts
             if (msg.from === 'status@broadcast') {
@@ -137,27 +139,22 @@ async function startBot() {
 
             const chat = await msg.getChat();
 
-            // Simulate typing
+            // 1. "Reading" Delay (Simulate human reading time: 1-2 seconds)
+            const readingDelay = Math.floor(Math.random() * 1000) + 1000;
+            await new Promise(resolve => setTimeout(resolve, readingDelay));
+
+            // 2. Start Typing (Indicator appears on WhatsApp)
             await chat.sendStateTyping();
-
-            // Random delay between 2 and 5 seconds (Anti-ban measure)
-            const delay = Math.floor(Math.random() * (5000 - 2000 + 1) + 2000);
-            console.log(`Waiting for ${delay}ms before replying...`);
-
-            await new Promise(resolve => setTimeout(resolve, delay));
-
-            // Clear typing state
-            await chat.clearState();
 
             // --- COMMANDS ---
 
             if (msg.body === '!ping') {
-                msg.reply('pong');
+                await msg.reply('pong');
                 return;
             }
 
             if (msg.body === '!help') {
-                msg.reply(`*Bot Commands*\n\n` +
+                await msg.reply(`*Bot Commands*\n\n` +
                     `!ping - Check if bot is alive\n` +
                     `!help - Show this menu\n` +
                     `!sticker - Reply to an image/video to make a sticker\n` +
@@ -169,26 +166,53 @@ async function startBot() {
                 if (msg.hasMedia) {
                     try {
                         const media = await msg.downloadMedia();
-                        client.sendMessage(msg.from, media, { sendMediaAsSticker: true });
+                        await client.sendMessage(msg.from, media, { sendMediaAsSticker: true });
                     } catch (err) {
                         console.error('Error creating sticker:', err);
-                        msg.reply('Error creating sticker.');
+                        await msg.reply('Error creating sticker.');
                     }
                 } else {
-                    msg.reply('Please send an image or video with the caption !sticker');
+                    await msg.reply('Please send an image or video with the caption !sticker');
                 }
                 return;
             }
 
-            // --- AI RESPONSE ---
-
-            // If it's not a command, use AI
+            // 3. AI Response Generation (Typing continues during this time)
             const aiResponse = await getAIResponse(msg.body);
-            msg.reply(aiResponse);
+
+            // 4. "Thinking/Typing" Delay (Simulate typing speed based on message length)
+            // Approx 0.05 - 0.1s per character
+            const typingTime = Math.min(Math.max(aiResponse.length * 50, 2000), 7000);
+            console.log(`Typing for ${typingTime}ms...`);
+            await new Promise(resolve => setTimeout(resolve, typingTime));
+
+            // 5. Send the reply
+            await msg.reply(aiResponse);
 
         } catch (error) {
             console.error('Error handling message:', error);
         }
+    }
+
+    // Listen for incoming messages
+    client.on('message', async msg => {
+        const chatId = msg.from;
+
+        // Get existing queue for this chat or start a fresh one
+        const previousTask = chatQueues.get(chatId) || Promise.resolve();
+
+        // Chain the new message processing to the previous task
+        const currentTask = previousTask
+            .then(() => processMessage(msg))
+            .catch(err => console.error(`Queue error for ${chatId}:`, err))
+            .finally(() => {
+                // Remove from map if this is still the latest task in queue
+                if (chatQueues.get(chatId) === currentTask) {
+                    chatQueues.delete(chatId);
+                }
+            });
+
+        chatQueues.set(chatId, currentTask);
     });
 
     // Start the dashboard server
