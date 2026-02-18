@@ -183,6 +183,11 @@ app.get('/api/check-auth', (req, res) => {
     }
 });
 
+// Health check endpoint for Railway/Render
+app.get('/', (req, res) => {
+    res.status(200).send('OK');
+});
+
 // ==================== WHATSAPP ROUTES ====================
 
 app.get('/api/whatsapp/status', requireAuth, async (req, res) => {
