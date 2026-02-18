@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { Client, LocalAuth, RemoteAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const { getAIResponse } = require('./ai');
