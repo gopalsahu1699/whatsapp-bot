@@ -64,6 +64,7 @@ async function loadWhatsAppStatus() {
         const statusText = document.getElementById('statusText');
         const qrContainer = document.getElementById('qrContainer');
         const disconnectBtn = document.getElementById('disconnectBtn');
+        const restartBotBtn = document.getElementById('restartBotBtn');
 
         if (data.connected) {
             statusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75';
@@ -72,12 +73,14 @@ async function loadWhatsAppStatus() {
             statusText.className = 'text-sm font-bold text-emerald-400';
             qrContainer.classList.add('hidden');
             disconnectBtn.classList.remove('hidden');
+            restartBotBtn.classList.add('hidden');
         } else if (data.hasQR) {
-            statusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75';
-            statusDotFixed.className = 'relative inline-flex rounded-full h-3 w-3 bg-red-500';
+            statusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75';
+            statusDotFixed.className = 'relative inline-flex rounded-full h-3 w-3 bg-amber-500';
             statusText.textContent = 'Action Required: Scan QR';
-            statusText.className = 'text-sm font-bold text-red-400';
+            statusText.className = 'text-sm font-bold text-amber-400';
             disconnectBtn.classList.add('hidden');
+            restartBotBtn.classList.remove('hidden');
             await loadQRCode();
         } else {
             statusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75';
@@ -86,6 +89,7 @@ async function loadWhatsAppStatus() {
             statusText.className = 'text-sm font-bold text-slate-400';
             qrContainer.classList.add('hidden');
             disconnectBtn.classList.add('hidden');
+            restartBotBtn.classList.remove('hidden');
         }
     } catch (error) {
         console.error('Failed to load WhatsApp status:', error);

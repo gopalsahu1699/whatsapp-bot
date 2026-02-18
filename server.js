@@ -99,45 +99,42 @@ let isClientReady = false;
 function setWhatsAppClient(client) {
     whatsappClient = client;
 
+    // Reset state for the new client
+    qrCodeData = null;
+    isClientReady = false;
+
     client.on('qr', async (qr) => {
         qrCodeData = await QRCode.toDataURL(qr);
         isClientReady = false;
-        console.log('QR Code generated and ready for scan');
+        console.log('[Dashboard] QR Code generated and ready for scan');
     });
 
     client.on('authenticated', () => {
-        console.log('WhatsApp Authenticated');
+        console.log('[Dashboard] WhatsApp Authenticated - clearing QR');
         qrCodeData = null; // Clear QR as soon as authenticated
     });
 
     client.on('ready', () => {
         isClientReady = true;
         qrCodeData = null;
-        console.log('WhatsApp Client is Ready');
+        console.log('[Dashboard] WhatsApp Client is Ready and Connected');
     });
 
     client.on('auth_failure', (msg) => {
-        console.error('WhatsApp Auth Failure:', msg);
+        console.error('[Dashboard] WhatsApp Auth Failure:', msg);
         qrCodeData = null;
         isClientReady = false;
     });
 
     client.on('loading_screen', (percent, message) => {
-        console.log(`WhatsApp Loading: ${percent}% - ${message}`);
+        console.log(`[Dashboard] WhatsApp Loading: ${percent}% - ${message}`);
     });
 
-    client.on('disconnected', () => {
+    client.on('disconnected', (reason) => {
         isClientReady = false;
         qrCodeData = null;
-        console.log('WhatsApp Client Disconnected');
+        console.log('[Dashboard] WhatsApp Client Disconnected:', reason);
     });
-
-    // Check if it's already in a ready state
-    if (client.info && client.info.wid) {
-        console.log('WhatsApp detected as already ready on startup');
-        isClientReady = true;
-        qrCodeData = null;
-    }
 }
 
 // Authentication middleware
@@ -188,17 +185,35 @@ app.get('/api/check-auth', (req, res) => {
 
 // ==================== WHATSAPP ROUTES ====================
 
-app.get('/api/whatsapp/status', requireAuth, (req, res) => {
-    // Proactive check: If the flag is false but client info exists, we are connected
-    if (!isClientReady && whatsappClient && whatsappClient.info && whatsappClient.info.wid) {
-        isClientReady = true;
-        qrCodeData = null;
-    }
+app.get('/api/whatsapp/status', requireAuth, async (req, res) => {
+    try {
+        // Live state check: use getState() for the most accurate result
+        if (whatsappClient) {
+            try {
+                const state = await whatsappClient.getState();
+                if (state === 'CONNECTED') {
+                    isClientReady = true;
+                    qrCodeData = null;
+                }
+            } catch (stateErr) {
+                // getState() can fail if browser is not ready yet - fallback to info check
+                if (whatsappClient.info && whatsappClient.info.wid) {
+                    isClientReady = true;
+                    qrCodeData = null;
+                }
+            }
+        }
 
-    res.json({
-        connected: isClientReady,
-        hasQR: qrCodeData !== null
-    });
+        res.json({
+            connected: isClientReady,
+            hasQR: qrCodeData !== null
+        });
+    } catch (error) {
+        res.json({
+            connected: false,
+            hasQR: qrCodeData !== null
+        });
+    }
 });
 
 app.get('/api/whatsapp/qr', requireAuth, (req, res) => {

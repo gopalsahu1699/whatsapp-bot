@@ -38,7 +38,7 @@ function createClient(executablePath, authStrategy) {
 async function startBot() {
     if (isInitializing) return;
     isInitializing = true;
-    
+
     console.log('Starting bot...');
 
     let authStrategy;
@@ -69,7 +69,7 @@ async function startBot() {
         const fs = require('fs');
         const path = require('path');
         const baseDir = path.join(__dirname, '.puppeteer-cache');
-        
+
         function findChrome(dir) {
             if (!fs.existsSync(dir)) return null;
             const files = fs.readdirSync(dir);
@@ -99,12 +99,19 @@ async function startBot() {
         console.log('New QR Code generated.');
     });
 
+    client.on('authenticated', () => {
+        console.log('WhatsApp Authenticated');
+    });
+
     client.on('auth_failure', msg => {
         console.error('AUTHENTICATION FAILURE', msg);
     });
 
     client.on('ready', () => {
         console.log('Client is ready!');
+        if (client.info && client.info.wid) {
+            console.log('Connected as:', client.info.wid._serialized);
+        }
     });
 
     client.on('disconnected', async (reason) => {
@@ -174,7 +181,7 @@ async function startBot() {
     // Start the dashboard server (only once)
     const { setWhatsAppClient } = require('./server');
     setWhatsAppClient(client);
-    
+
     if (!global.serverStarted) {
         startServer(client);
         global.serverStarted = true;
@@ -205,7 +212,7 @@ async function restartBot() {
 
 startBot();
 
-module.exports = { 
+module.exports = {
     getClient: () => client,
     restartBot: restartBot
 };
