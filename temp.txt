@@ -1,1 +1,0 @@
-mongodb+srv://Go321321:Go321321@cluster0.w83j8al.mongodb.net/?appName=Cluster0

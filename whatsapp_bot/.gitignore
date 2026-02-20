@@ -22,9 +22,16 @@ Thumbs.db
 
 # Test outputs
 output.txt
+temp.txt
+
+# Data and CSV files
+*.csv
 
 # Uploaded files
 public/uploads/
 
 # Puppeteer Cache (Installed on server during build)
 .puppeteer-cache/
+
+# Temporary test folders
+contact test/
