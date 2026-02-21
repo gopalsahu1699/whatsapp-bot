@@ -3,7 +3,7 @@
   "appName": "WBot",
   "webDir": "public",
   "server": {
-    "url": "https://whatsapp-bot-production-696d.up.railway.app/",
+    "url": "https://wbot.up.railway.app/",
     "cleartext": true
   }
 }
