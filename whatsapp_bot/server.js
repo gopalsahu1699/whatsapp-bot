@@ -183,9 +183,9 @@ app.get('/api/check-auth', (req, res) => {
     }
 });
 
-// Health check endpoint for Railway/Render
+// Health check / Splash endpoint
 app.get('/', (req, res) => {
-    res.status(200).send('OK');
+    res.sendFile(path.join(__dirname, 'public', 'splash.html'));
 });
 
 // ==================== WHATSAPP ROUTES ====================

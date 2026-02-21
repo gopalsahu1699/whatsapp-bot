@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f172a">
+    <title>Loading Autommensor...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .splash-container {
+            text-align: center;
+        }
+
+        .logo-animate {
+            font-size: 5rem;
+            animation: bounceIn 1.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+            opacity: 0;
+            transform: scale(0.5);
+            margin-bottom: 1rem;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+
+            50% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+
+            70% {
+                transform: scale(0.9);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .text-animate {
+            color: #94a3b8;
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            font-weight: 700;
+            opacity: 0;
+            animation: fadeIn 0.8s ease-out 1s forwards;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loader-bar {
+            width: 200px;
+            height: 3px;
+            background: rgba(99, 102, 241, 0.1);
+            margin: 2.5rem auto;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loader-progress {
+            position: absolute;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, #6366f1, #a855f7, transparent);
+            animation: loading 2s infinite linear;
+        }
+
+        @keyframes loading {
+            0% {
+                left: -100%;
+            }
+
+            100% {
+                left: 100%;
+            }
+        }
+
+        .status-text {
+            color: #475569;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 500;
+            margin-top: -1rem;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out 1.5s forwards;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="splash-container">
+        <div class="logo-animate">🤖</div>
+        <h1 class="text-animate">Autommensor AI</h1>
+        <div class="loader-bar">
+            <div class="loader-progress"></div>
+        </div>
+        <p class="status-text">Synchronizing Workspace...</p>
+    </div>
+
+    <script>
+        async function startApp() {
+            const startTime = Date.now();
+            let destination = '/login.html';
+
+            try {
+                // Check auth while animation is playing
+                const response = await fetch('/api/check-auth');
+                const data = await response.json();
+                if (data.authenticated) {
+                    destination = '/dashboard.html';
+                }
+            } catch (error) {
+                console.error('Auth check failed:', error);
+            }
+
+            // Ensure animation plays for at least 3 seconds for brand impact
+            const elapsedTime = Date.now() - startTime;
+            const remainingTime = Math.max(0, 3000 - elapsedTime);
+
+            setTimeout(() => {
+                document.body.style.transition = 'opacity 0.6s ease-in-out';
+                document.body.style.opacity = '0';
+                setTimeout(() => {
+                    window.location.href = destination;
+                }, 600);
+            }, remainingTime);
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', startApp);
+    </script>
+</body>
+
+</html>
