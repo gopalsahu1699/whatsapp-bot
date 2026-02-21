@@ -1,0 +1,374 @@
+// Global state
+let templates = [];
+let uploadedContacts = [];
+let bulkEventSource = null;
+
+// Check authentication on load
+async function checkAuth() {
+    try {
+        const response = await fetch('/api/check-auth');
+        const data = await response.json();
+
+        if (!data.authenticated) {
+            window.location.href = '/login.html';
+        }
+    } catch (error) {
+        console.error('Auth check failed:', error);
+        window.location.href = '/login.html';
+    }
+}
+
+// Initialize page
+async function init() {
+    await checkAuth();
+    setupEventListeners();
+    await loadWhatsAppStatus();
+    await loadTemplates();
+    startStatusPolling();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+
+    // Bulk messaging events
+    document.getElementById('uploadCsvBtn').addEventListener('click', uploadCSV);
+    document.getElementById('sendBulkBtn').addEventListener('click', sendBulkMessages);
+    document.getElementById('cancelBulkBtn').addEventListener('click', cancelBulk);
+    document.getElementById('bulkTemplateSelect').addEventListener('change', previewTemplate);
+    document.getElementById('downloadSample').addEventListener('click', downloadSampleCSV);
+
+    // QR related
+    document.getElementById('regenQrBtn').addEventListener('click', restartWhatsApp);
+}
+
+// ==================== AUTHENTICATION ====================
+
+async function logout() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+}
+
+// ==================== WHATSAPP STATUS ====================
+
+async function loadWhatsAppStatus() {
+    try {
+        const response = await fetch('/api/whatsapp/status');
+        const data = await response.json();
+
+        const statusDot = document.getElementById('statusDot');
+        const statusDotFixed = document.getElementById('statusDotFixed');
+        const statusText = document.getElementById('statusText');
+        const connectionIndicator = document.getElementById('connectionIndicator');
+        const qrModal = document.getElementById('qrModal');
+
+        connectionIndicator.classList.remove('hidden');
+
+        if (data.connected) {
+            statusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75';
+            statusDotFixed.className = 'relative inline-flex rounded-full h-2 w-2 bg-emerald-500';
+            statusText.textContent = 'Active';
+            statusText.className = 'text-[10px] font-bold text-emerald-400 uppercase tracking-tight';
+            qrModal.classList.add('hidden');
+        } else if (data.hasQR) {
+            statusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75';
+            statusDotFixed.className = 'relative inline-flex rounded-full h-2 w-2 bg-amber-500';
+            statusText.textContent = 'Action Required';
+            statusText.className = 'text-[10px] font-bold text-amber-400 uppercase tracking-tight';
+
+            // Only show QR modal if we're not currently sending
+            if (!bulkEventSource) {
+                await loadQRCode();
+                qrModal.classList.remove('hidden');
+            }
+        } else {
+            statusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75';
+            statusDotFixed.className = 'relative inline-flex rounded-full h-2 w-2 bg-slate-500';
+            statusText.textContent = 'Connecting...';
+            statusText.className = 'text-[10px] font-bold text-slate-400 uppercase tracking-tight';
+        }
+    } catch (error) {
+        console.error('Failed to load WhatsApp status:', error);
+    }
+}
+
+async function loadQRCode() {
+    try {
+        const response = await fetch('/api/whatsapp/qr');
+        const data = await response.json();
+
+        if (data.qr) {
+            document.getElementById('qrCode').src = data.qr;
+        }
+    } catch (error) {
+        console.error('Failed to load QR code:', error);
+    }
+}
+
+async function restartWhatsApp() {
+    const btn = document.getElementById('regenQrBtn');
+    const originalText = btn.textContent;
+
+    try {
+        btn.disabled = true;
+        btn.textContent = 'Restarting...';
+
+        const response = await fetch('/api/whatsapp/restart', { method: 'POST' });
+        const data = await response.json();
+
+        if (data.success) {
+            await loadWhatsAppStatus();
+        } else {
+            throw new Error(data.error || 'Failed to restart');
+        }
+    } catch (error) {
+        alert('Restart failed: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
+}
+
+function startStatusPolling() {
+    setInterval(loadWhatsAppStatus, 5000);
+}
+
+// ==================== TEMPLATES ====================
+
+async function loadTemplates() {
+    try {
+        const response = await fetch('/api/templates');
+        templates = await response.json();
+        updateTemplateSelect();
+    } catch (error) {
+        console.error('Failed to load templates:', error);
+    }
+}
+
+function updateTemplateSelect() {
+    const select = document.getElementById('bulkTemplateSelect');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Select a template --</option>' +
+        templates.map(t => `<option value="${t._id}">${escapeHtml(t.name)}</option>`).join('');
+}
+
+function previewTemplate() {
+    const select = document.getElementById('bulkTemplateSelect');
+    const templateId = select.value;
+    const preview = document.getElementById('templatePreview');
+
+    if (!templateId) {
+        preview.classList.add('hidden');
+        updateSendButton();
+        return;
+    }
+
+    const template = templates.find(t => t._id === templateId);
+    if (!template) return;
+
+    preview.innerHTML = `
+        <div class="font-bold text-indigo-400 mb-2 uppercase tracking-tight text-[10px]">Active Template: ${escapeHtml(template.name)}</div>
+        <div class="text-slate-300 leading-relaxed">${escapeHtml(template.message)}</div>
+        ${template.imagePath ? '<div class="mt-3 inline-flex items-center px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded-md text-[10px] uppercase font-bold tracking-widest"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg> Attachment Included</div>' : ''}
+    `;
+    preview.classList.remove('hidden');
+    updateSendButton();
+}
+
+// ==================== BULK MESSAGING ====================
+
+async function uploadCSV() {
+    const fileInput = document.getElementById('csvFile');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert('Please select a CSV file');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('csv', file);
+
+    const btn = document.getElementById('uploadCsvBtn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+
+    try {
+        const response = await fetch('/api/bulk/upload-csv', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            uploadedContacts = data.contacts;
+            const statusDiv = document.getElementById('csvStatus');
+            statusDiv.className = 'p-4 rounded-xl text-xs font-bold bg-emerald-500/10 border border-emerald-500/30 text-emerald-500 animate-in slide-in-from-top duration-300';
+            statusDiv.innerHTML = `✓ Successfully parsed ${data.count} contacts. Ready to launch.`;
+            statusDiv.classList.remove('hidden');
+            logCampaign(`System: File parsed. Found ${data.count} contacts.`);
+            updateSendButton();
+        } else {
+            throw new Error(data.error);
+        }
+    } catch (error) {
+        const statusDiv = document.getElementById('csvStatus');
+        statusDiv.className = 'p-4 rounded-xl text-xs font-bold bg-red-500/10 border border-red-500/30 text-red-500 animate-in slide-in-from-top duration-300';
+        statusDiv.textContent = '✗ Error: ' + error.message;
+        statusDiv.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Upload';
+    }
+}
+
+function updateSendButton() {
+    const btn = document.getElementById('sendBulkBtn');
+    const templateId = document.getElementById('bulkTemplateSelect').value;
+    btn.disabled = !(uploadedContacts.length > 0 && templateId);
+}
+
+async function sendBulkMessages() {
+    const templateId = document.getElementById('bulkTemplateSelect').value;
+    const delay = document.getElementById('bulkDelaySelect').value;
+
+    if (!confirm(`Launch campaign to ${uploadedContacts.length} contacts?`)) return;
+
+    document.getElementById('sendBulkBtn').classList.add('hidden');
+    document.getElementById('cancelBulkBtn').classList.remove('hidden');
+    document.getElementById('bulkProgress').classList.remove('hidden');
+    document.getElementById('campaignBadge').textContent = 'Campaign In Progress';
+    document.getElementById('campaignBadge').className = 'text-[10px] bg-emerald-500/20 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/20 font-bold uppercase tracking-widest';
+
+    logCampaign(`Campaign: Starting with ${delay}s delay...`);
+
+    try {
+        const response = await fetch('/api/bulk/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contacts: uploadedContacts, templateId, delay })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to start bulk send');
+        }
+
+        // Setup EventSource for progress updates
+        const reader = response.body.getReader();
+        bulkEventSource = reader;
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = JSON.parse(line.substring(6));
+                    updateProgress(data);
+
+                    if (data.complete) {
+                        completeBulkSend(data);
+                        return;
+                    }
+
+                    if (data.error) {
+                        logCampaign(`Error: ${data.error}`, true);
+                    } else if (data.current) {
+                        logCampaign(`Sent: ${data.current}`);
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        logCampaign(`Fatal Error: ${error.message}`, true);
+        alert('Failed to send messages: ' + error.message);
+        resetBulkUI();
+    }
+}
+
+function updateProgress(data) {
+    const fill = document.getElementById('progressFill');
+    const text = document.getElementById('progressText');
+    const details = document.getElementById('progressDetails');
+    const currentProcess = document.getElementById('currentProcess');
+
+    fill.style.width = data.percentage + '%';
+    text.textContent = data.percentage + '%';
+    details.textContent = `Queue: ${data.total} | Sent: ${data.sent} | Issues: ${data.failed}`;
+
+    if (data.current) {
+        currentProcess.textContent = `Processing: ${data.current}`;
+    }
+}
+
+function logCampaign(message, isError = false) {
+    const logContainer = document.getElementById('logContainer');
+    const div = document.createElement('div');
+    if (isError) div.className = 'text-red-400';
+    div.textContent = `> ${new Date().toLocaleTimeString()}: ${message}`;
+    logContainer.appendChild(div);
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
+
+function completeBulkSend(data) {
+    logCampaign(`Campaign: Finished. Total successful: ${data.sent}, Failed: ${data.failed}`);
+    setTimeout(() => {
+        alert(`Campaign Finished!\nSuccessfully Sent: ${data.sent}\nFailed/Errors: ${data.failed}`);
+        resetBulkUI();
+    }, 500);
+}
+
+function cancelBulk() {
+    if (confirm('Are you sure you want to stop the campaign?')) {
+        if (bulkEventSource) {
+            bulkEventSource.cancel();
+            bulkEventSource = null;
+        }
+        logCampaign(`Campaign: Aborted by user.`, true);
+        resetBulkUI();
+    }
+}
+
+function resetBulkUI() {
+    document.getElementById('sendBulkBtn').classList.remove('hidden');
+    document.getElementById('cancelBulkBtn').classList.add('hidden');
+    document.getElementById('bulkProgress').classList.add('hidden');
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('campaignBadge').textContent = 'Ready to blast';
+    document.getElementById('campaignBadge').className = 'text-[10px] bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20 font-bold uppercase tracking-widest italic';
+    bulkEventSource = null;
+}
+
+function downloadSampleCSV(e) {
+    e.preventDefault();
+    const headers = 'name,phone,custom1,custom2\n';
+    const sample = 'John Doe,919876543210,CustomValue1,CustomValue2\nJane Smith,918765432109,AnotherValue,';
+    const blob = new Blob([headers + sample], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'autommensor-contacts-sample.csv';
+    a.click();
+}
+
+// ==================== UTILITIES ====================
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}

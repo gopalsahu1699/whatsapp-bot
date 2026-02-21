@@ -1,0 +1,9 @@
+{
+  "appId": "com.wbot.app",
+  "appName": "WBot",
+  "webDir": "public",
+  "server": {
+    "url": "https://whatsapp-bot-production-696d.up.railway.app/",
+    "cleartext": true
+  }
+}

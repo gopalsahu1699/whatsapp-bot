@@ -363,7 +363,7 @@ app.post('/api/bulk/upload-csv', requireAuth, csvUpload.single('csv'), async (re
 
 app.post('/api/bulk/send', requireAuth, async (req, res) => {
     try {
-        const { contacts, templateId } = req.body;
+        const { contacts, templateId, delay } = req.body;
 
         if (!whatsappClient || !isClientReady) {
             return res.status(400).json({ error: 'WhatsApp not connected' });
@@ -443,9 +443,16 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
                     percentage: Math.round(((sent + failed) / contacts.length) * 100)
                 })}\n\n`);
 
-                // Reduced Anti-Ban Delay: (4-8 seconds is generally safe for 50 messages)
-                const delay = Math.floor(Math.random() * 4000) + 4000;
-                await new Promise(resolve => setTimeout(resolve, delay));
+                // Calculate wait time
+                let sleepTime = 20000; // default 20 seconds
+                if (delay === '4-8') {
+                    sleepTime = Math.floor(Math.random() * 4000) + 4000;
+                } else if (delay) {
+                    sleepTime = parseInt(delay, 10) * 1000;
+                }
+
+                // Anti-Ban Delay
+                await new Promise(resolve => setTimeout(resolve, sleepTime));
 
             } catch (error) {
                 failed++;

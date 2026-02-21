@@ -61,6 +61,9 @@
                         <nav id="navMenu" class="hidden md:flex space-x-6">
                             <a href="dashboard.html"
                                 class="nav-link text-sm font-medium hover:text-primary transition-colors py-5 nav-link-active">Dashboard</a>
+                            <a href="bulk.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Bulk
+                                Messaging</a>
                             <a href="templates.html"
                                 class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Templates</a>
                             <a href="training.html"
@@ -122,100 +125,55 @@
                     </section>
                 </div>
 
-                <!-- Right Column: Actions -->
+                <!-- Right Column: Welcome & Stats -->
                 <div class="lg:col-span-2 space-y-8">
-                    <!-- Bulk Messaging Section -->
-                    <section class="glass border border-dark-border rounded-2xl p-8 shadow-xl">
-                        <div class="flex items-center justify-between mb-8">
-                            <h2 class="text-xl font-bold flex items-center">
-                                <span class="mr-2">📤</span> Bulk Messaging
-                            </h2>
-                            <span
-                                class="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-1 rounded-full border border-indigo-500/20 font-bold uppercase tracking-widest italic">Ready
-                                to blast</span>
+                    <section
+                        class="glass border border-dark-border rounded-2xl p-10 shadow-xl overflow-hidden relative">
+                        <div
+                            class="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl">
                         </div>
+                        <div class="relative z-10">
+                            <h2 class="text-3xl font-bold mb-4">Welcome back to <span
+                                    class="text-primary tracking-tight">Autommensor</span></h2>
+                            <p class="text-slate-400 max-w-xl mb-8 leading-relaxed">Your professional WhatsApp
+                                automation suite. Manage templates, train your AI assistant, and launch high-impact bulk
+                                messaging campaigns from one central dashboard.</p>
 
-                        <div class="grid grid-cols-1 gap-12">
-                            <!-- Step 1: Upload CSV -->
-                            <div class="space-y-4">
-                                <h3
-                                    class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center group">
-                                    <span
-                                        class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] mr-2">1</span>
-                                    Upload Contacts (CSV)
-                                </h3>
-                                <div class="bg-dark-bg/30 p-6 rounded-2xl border border-dark-border/30 space-y-4">
-                                    <div class="flex justify-between items-center text-xs">
-                                        <p class="text-slate-500">Columns: name, phone + custom vars</p>
-                                        <a href="#" id="downloadSample"
-                                            class="text-primary hover:underline font-bold">Download Sample</a>
-                                    </div>
-                                    <div class="flex flex-col sm:flex-row gap-4">
-                                        <input type="file" id="csvFile" accept=".csv"
-                                            class="flex-grow file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-indigo-500/20 file:text-indigo-400 hover:file:bg-indigo-500/30 cursor-pointer text-slate-500 transition-all">
-                                        <button id="uploadCsvBtn"
-                                            class="px-6 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded-xl shadow-lg transition-all">Upload</button>
-                                    </div>
-                                    <div id="csvStatus"
-                                        class="hidden p-4 rounded-xl text-xs font-medium border animate-in slide-in-from-top duration-300">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Step 2: Select Template -->
-                            <div class="space-y-4">
-                                <h3
-                                    class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center">
-                                    <span
-                                        class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] mr-2">2</span>
-                                    Select Content
-                                </h3>
-                                <div class="space-y-4">
-                                    <select id="bulkTemplateSelect"
-                                        class="w-full px-4 py-3 bg-dark-bg/50 border border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all">
-                                        <option value="">-- Choose a template --</option>
-                                    </select>
-                                    <div id="templatePreview"
-                                        class="hidden p-4 bg-indigo-500/5 border-l-4 border-indigo-500 rounded-r-xl text-sm italic text-slate-400 whitespace-pre-line leading-relaxed shadow-sm">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Step 3: Send -->
-                            <div class="space-y-4">
-                                <h3
-                                    class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center">
-                                    <span
-                                        class="w-6 h-6 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-[10px] mr-2">3</span>
-                                    Execution
-                                </h3>
-                                <div class="bg-dark-bg/30 p-6 rounded-2xl border border-dark-border/30">
-                                    <div class="flex flex-col sm:flex-row gap-4 mb-6">
-                                        <button id="sendBulkBtn"
-                                            class="flex-grow py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-95"
-                                            disabled>
-                                            Start Campaigns
-                                        </button>
-                                        <button id="cancelBulkBtn"
-                                            class="hidden py-4 px-8 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 font-bold rounded-xl transition-all">
-                                            Kill Process
-                                        </button>
-                                    </div>
-
-                                    <div id="bulkProgress" class="hidden space-y-4 animate-in fade-in duration-500">
-                                        <div class="flex justify-between items-end mb-2">
-                                            <span id="progressText"
-                                                class="text-3xl font-black text-white italic tracking-tighter">0%</span>
-                                            <span id="progressDetails"
-                                                class="text-xs text-slate-500 font-bold uppercase tracking-widest">Processing...</span>
-                                        </div>
-                                        <div
-                                            class="w-full h-4 bg-slate-800 rounded-full overflow-hidden shadow-inner p-0.5 border border-slate-700">
-                                            <div id="progressFill"
-                                                class="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-300 ease-out shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-                                                style="width: 0%"></div>
-                                        </div>
-                                    </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <a href="bulk.html"
+                                    class="p-6 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl hover:bg-indigo-500/20 transition-all group">
+                                    <div
+                                        class="w-12 h-12 bg-indigo-500 rounded-xl mb-4 flex items-center justify-center text-xl shadow-lg shadow-indigo-500/20 group-hover:scale-110 transition-transform">
+                                        📤</div>
+                                    <h3 class="font-bold text-lg mb-1">Bulk Messaging</h3>
+                                    <p class="text-xs text-slate-500">Send personalized messages to thousands of
+                                        contacts with smart delays.</p>
+                                </a>
+                                <a href="templates.html"
+                                    class="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl hover:bg-emerald-500/20 transition-all group">
+                                    <div
+                                        class="w-12 h-12 bg-emerald-500 rounded-xl mb-4 flex items-center justify-center text-xl shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform">
+                                        🗒️</div>
+                                    <h3 class="font-bold text-lg mb-1">Message Templates</h3>
+                                    <p class="text-xs text-slate-500">Design beautiful message templates with custom
+                                        variables and images.</p>
+                                </a>
+                                <a href="training.html"
+                                    class="p-6 bg-amber-500/10 border border-amber-500/20 rounded-2xl hover:bg-amber-500/20 transition-all group">
+                                    <div
+                                        class="w-12 h-12 bg-amber-500 rounded-xl mb-4 flex items-center justify-center text-xl shadow-lg shadow-amber-500/20 group-hover:scale-110 transition-transform">
+                                        🧠</div>
+                                    <h3 class="font-bold text-lg mb-1">AI Training</h3>
+                                    <p class="text-xs text-slate-500">Train your automated bot with business info and
+                                        FAQ for smart replies.</p>
+                                </a>
+                                <div class="p-6 bg-slate-800/50 border border-dark-border rounded-2xl">
+                                    <div
+                                        class="w-12 h-12 bg-slate-700 rounded-xl mb-4 flex items-center justify-center text-xl">
+                                        📊</div>
+                                    <h3 class="font-bold text-lg mb-1">Campaign Analytics</h3>
+                                    <p class="text-xs text-slate-500 italic">Advanced reporting and delivery insights
+                                        coming soon...</p>
                                 </div>
                             </div>
                         </div>
