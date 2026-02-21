@@ -34,6 +34,33 @@ body {
     -webkit-backdrop-filter: blur(12px);
 }
 
+/* Safe Area Handling for Mobile */
+:root {
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Apply to headers and navs */
+header,
+nav {
+    padding-top: var(--safe-area-top) !important;
+}
+
+/* Apply to the main dashboard container to avoid overlap at bottom */
+.dashboard {
+    padding-bottom: calc(5rem + var(--safe-area-bottom)) !important;
+}
+
+/* Fix for mobile status dot at bottom right */
+.fixed.bottom-6.right-6 {
+    bottom: calc(1.5rem + var(--safe-area-bottom));
+}
+
+/* Apply padding to body if needed */
+body {
+    padding-bottom: var(--safe-area-bottom);
+}
+
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
     width: 8px;
