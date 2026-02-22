@@ -64,4 +64,45 @@ ${contextString}
     }
 }
 
-module.exports = { getAIResponse };
+async function getCampaignAdvice(campaignStats) {
+    try {
+        const businessData = await BusinessInfo.findOne() || {};
+
+        const contextLines = [
+            `My Business Name: Autommensor`,
+            `About Us:\n${businessData.aboutUs || ''}`,
+            `Products/Services:\n${businessData.products || ''}`
+        ];
+        const contextString = contextLines.join('\n\n');
+
+        const systemPrompt = `You are an expert AI Marketing & Growth Advisor for a business called Autommensor.
+Your goal is to look at the recent WhatsApp marketing campaign statistics and provide actionable, specific advice on how to improve engagement, reduce failure rates, and grow the business.
+Keep your answer structured with bullet points. Be encouraging but analytical. Do not make up fake data.
+
+--- BUSINESS INFORMATION ---
+${contextString}
+----------------------------
+
+--- CAMPAIGN STATS TO ANALYZE ---
+${JSON.stringify(campaignStats, null, 2)}
+---------------------------------`;
+
+        const completion = await openai.chat.completions.create({
+            model: MODEL_NAME,
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: "Based on these campaign results, what is your opinion on our performance and what 3 actionable steps should we take to grow our business?" }
+            ],
+            temperature: 0.7,
+            max_tokens: 1500,
+        });
+
+        return completion.choices[0].message.content;
+
+    } catch (error) {
+        console.error("Error generating AI Campaign Advice:", error);
+        return "Sorry, the AI Growth Advisor is currently unavailable. Please try again later.";
+    }
+}
+
+module.exports = { getAIResponse, getCampaignAdvice };

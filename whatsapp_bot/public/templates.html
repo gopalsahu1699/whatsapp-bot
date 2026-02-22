@@ -6,7 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Templates - Autommensor</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"
+        media="print" onload="this.media='all'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    </noscript>
     <script>
         tailwind.config = {
             theme: {
@@ -44,6 +48,26 @@
             color: #6366f1;
             border-bottom: 2px solid #6366f1;
         }
+
+        .mobile-nav-active {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            border-left: 4px solid #6366f1;
+        }
+
+        /* Custom scrollbar for mobile */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
     </style>
 </head>
 
@@ -55,24 +79,90 @@
                 <div class="flex justify-between items-center h-16">
                     <div class="flex items-center space-x-8">
                         <h1
-                            class="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-                            🤖 Autommensor
+                            class="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent flex items-center">
+                            <span class="mr-2">🤖</span> Autommensor
                         </h1>
                         <nav id="navMenu" class="hidden md:flex space-x-6">
                             <a href="dashboard.html"
-                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Dashboard</a>
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5">Dashboard</a>
                             <a href="bulk.html"
-                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Bulk
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5">Bulk
                                 Messaging</a>
                             <a href="templates.html"
-                                class="nav-link text-sm font-medium hover:text-primary transition-colors py-5 nav-link-active">Templates</a>
+                                class="nav-link text-sm font-medium nav-link-active transition-colors py-5">Templates</a>
                             <a href="training.html"
-                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">AI
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5">AI
                                 Training</a>
+                            <a href="analytics.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5">Analytics</a>
+                            <a href="contacts.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5">Contacts</a>
                         </nav>
                     </div>
-                    <button id="logoutBtn"
-                        class="px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+
+                    <div class="flex items-center space-x-3">
+                        <button id="logoutBtn"
+                            class="hidden sm:block px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+                        <!-- Mobile Menu Button -->
+                        <button id="mobileMenuBtn"
+                            class="md:hidden p-2 text-slate-400 hover:text-white transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Drawer -->
+            <div id="mobileMenu" class="fixed inset-0 z-[60] md:hidden hidden">
+                <div id="mobileMenuOverlay"
+                    class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"></div>
+                <div class="absolute right-0 top-0 bottom-0 w-3/4 max-w-xs bg-slate-900 border-l border-dark-border shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full"
+                    id="mobileMenuContent">
+                    <div class="p-6 border-b border-dark-border flex justify-between items-center">
+                        <span class="font-bold text-indigo-400">Navigation</span>
+                        <button id="closeMobileMenu" class="p-2 text-slate-500 hover:text-white">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <nav class="flex-1 overflow-y-auto p-4 space-y-2">
+                        <a href="dashboard.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>🏠</span> <span>Dashboard</span>
+                        </a>
+                        <a href="bulk.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>📤</span> <span>Bulk Messaging</span>
+                        </a>
+                        <a href="templates.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl mobile-nav-active font-bold">
+                            <span>🗒️</span> <span>Templates</span>
+                        </a>
+                        <a href="training.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>🧠</span> <span>AI Training</span>
+                        </a>
+                        <a href="analytics.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>📊</span> <span>Analytics</span>
+                        </a>
+                        <a href="contacts.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>👤</span> <span>Contacts CRM</span>
+                        </a>
+                    </nav>
+                    <div class="p-6 border-t border-dark-border">
+                        <button id="mobileLogoutBtn"
+                            class="w-full py-4 bg-slate-800 text-red-400 font-bold rounded-2xl border border-red-500/10 active:scale-95 transition-all">
+                            Logout Device
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -85,7 +175,7 @@
                         <span class="mr-3 text-2xl">📝</span> Message Templates
                     </h2>
                     <button id="addTemplateBtn"
-                        class="px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all transform active:scale-95">
+                        class="w-full sm:w-auto px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all transform active:scale-95">
                         + Create New Template
                     </button>
                 </div>
@@ -97,10 +187,9 @@
                         class="relative w-full max-w-2xl animate-in fade-in zoom-in duration-300 bg-dark-card p-8 rounded-3xl border border-dark-border shadow-2xl overflow-y-auto max-h-[90vh]">
                         <div class="flex justify-between items-center mb-6">
                             <h3 id="formTitle" class="text-lg font-bold text-slate-300 uppercase tracking-widest">Add
-                                New
-                                Template</h3>
+                                New Template</h3>
                             <button type="button" onclick="hideTemplateForm()"
-                                class="text-slate-500 hover:text-white transition-colors">
+                                class="p-2 text-slate-500 hover:text-white transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                                     stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -111,7 +200,7 @@
                         <form id="templateFormElement" class="space-y-6">
                             <input type="hidden" id="templateId">
 
-                            <div class="grid grid-cols-2 gap-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div class="space-y-2">
                                     <label for="templateName"
                                         class="block text-sm font-semibold text-slate-400 ml-1">Template
@@ -163,10 +252,10 @@
                                         class="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer">
 
                                     <div id="currentImage"
-                                        class="hidden p-4 bg-dark-bg/80 rounded-2xl border border-dark-border/50 inline-block">
+                                        class="hidden p-4 bg-dark-bg/80 rounded-2xl border border-dark-border/50 inline-block text-center">
                                         <div class="relative inline-block">
                                             <img id="currentImagePreview"
-                                                class="max-w-[150px] rounded-lg shadow-md border border-slate-700">
+                                                class="max-w-[150px] rounded-lg shadow-md border border-slate-700 mx-auto">
                                             <button type="button" id="removeImageBtn"
                                                 class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-lg transition-all">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
@@ -176,16 +265,14 @@
                                                 </svg>
                                             </button>
                                         </div>
-                                        <p class="text-[10px] text-slate-500 mt-2 font-bold uppercase text-center">
-                                            Current
-                                            Image</p>
+                                        <p class="text-[10px] text-slate-500 mt-2 font-bold uppercase">Current Image</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="flex gap-4 pt-4 border-t border-dark-border/30">
+                            <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-dark-border/30">
                                 <button type="submit"
-                                    class="flex-1 px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/10 transition-all">
+                                    class="flex-1 px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/10 transition-all active:scale-95">
                                     Save Content
                                 </button>
                                 <button type="button" onclick="hideTemplateForm()"
@@ -205,11 +292,38 @@
         </main>
     </div>
 
-    <script src="templates.js"></script>
+    <script src="templates.js" defer></script>
     <script>
-        // Adjust the templates render logic in memory or via minor intercept
-        // templates.js logic needs to handle the new card structure.
-        // I'll update templates.js next if needed, but the IDs and container are the same.
+        // Mobile Menu Logic
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileMenuContent = document.getElementById('mobileMenuContent');
+        const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+
+        function toggleMenu(show) {
+            if (show) {
+                mobileMenu.classList.remove('hidden');
+                setTimeout(() => {
+                    mobileMenuContent.classList.remove('translate-x-full');
+                    mobileMenuOverlay.classList.remove('opacity-0');
+                }, 10);
+            } else {
+                mobileMenuContent.classList.add('translate-x-full');
+                mobileMenuOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    mobileMenu.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        mobileMenuBtn?.addEventListener('click', () => toggleMenu(true));
+        closeMobileMenu?.addEventListener('click', () => toggleMenu(false));
+        mobileMenuOverlay?.addEventListener('click', () => toggleMenu(false));
+
+        document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
+            document.getElementById('logoutBtn')?.click();
+        });
     </script>
 </body>
 

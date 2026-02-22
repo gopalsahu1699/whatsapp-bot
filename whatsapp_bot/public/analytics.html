@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Campaign Analytics - Autommensor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"
+        media="print" onload="this.media='all'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    </noscript>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#6366f1', dark: '#4f46e5' },
+                        dark: { bg: '#0f172a', card: '#1e293b', border: '#334155' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .nav-link-active {
+            color: #6366f1;
+            border-bottom: 2px solid #6366f1;
+        }
+
+        .mobile-nav-active {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            border-left: 4px solid #6366f1;
+        }
+
+        /* Custom scrollbar for mobile */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="text-slate-100 font-sans min-h-screen">
+    <div class="dashboard pb-20">
+        <!-- Header -->
+        <header class="glass border-b border-dark-border sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-8">
+                        <h1
+                            class="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent flex items-center">
+                            <span class="mr-2">🤖</span> Autommensor
+                        </h1>
+                        <nav id="navMenu" class="hidden md:flex space-x-6">
+                            <a href="dashboard.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Dashboard</a>
+                            <a href="bulk.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Bulk
+                                Messaging</a>
+                            <a href="templates.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Templates</a>
+                            <a href="training.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">AI
+                                Training</a>
+                            <a href="analytics.html"
+                                class="nav-link text-sm font-medium nav-link-active transition-colors py-5">Analytics</a>
+                            <a href="contacts.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Contacts</a>
+                        </nav>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <button id="logoutBtn"
+                            class="hidden sm:block px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+                        <!-- Mobile Menu Button -->
+                        <button id="mobileMenuBtn"
+                            class="md:hidden p-2 text-slate-400 hover:text-white transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Drawer -->
+            <div id="mobileMenu" class="fixed inset-0 z-[60] md:hidden hidden">
+                <div id="mobileMenuOverlay"
+                    class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"></div>
+                <div class="absolute right-0 top-0 bottom-0 w-3/4 max-w-xs bg-slate-900 border-l border-dark-border shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full"
+                    id="mobileMenuContent">
+                    <div class="p-6 border-b border-dark-border flex justify-between items-center">
+                        <span class="font-bold text-indigo-400">Navigation</span>
+                        <button id="closeMobileMenu" class="p-2 text-slate-500 hover:text-white">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <nav class="flex-1 overflow-y-auto p-4 space-y-2">
+                        <a href="dashboard.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>🏠</span> <span>Dashboard</span>
+                        </a>
+                        <a href="bulk.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>📤</span> <span>Bulk Messaging</span>
+                        </a>
+                        <a href="templates.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>🗒️</span> <span>Templates</span>
+                        </a>
+                        <a href="training.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>🧠</span> <span>AI Training</span>
+                        </a>
+                        <a href="analytics.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl mobile-nav-active font-bold">
+                            <span>📊</span> <span>Analytics</span>
+                        </a>
+                        <a href="contacts.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>👤</span> <span>Contacts CRM</span>
+                        </a>
+                    </nav>
+                    <div class="p-6 border-t border-dark-border">
+                        <button id="mobileLogoutBtn"
+                            class="w-full py-4 bg-slate-800 text-red-400 font-bold rounded-2xl border border-red-500/10 active:scale-95 transition-all">
+                            Logout Device
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-8">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold flex items-center">
+                    <span class="mr-3 text-2xl">📊</span> Analytics
+                </h2>
+                <button id="refreshBtn"
+                    class="p-2.5 bg-dark-card hover:bg-slate-700 text-slate-300 rounded-xl border border-dark-border transition-all active:scale-95"
+                    title="Refresh Data">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Dashboard Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+                <div class="glass border border-dark-border rounded-2xl p-4 sm:p-6 shadow-lg">
+                    <p class="text-[10px] sm:text-sm font-bold text-slate-500 uppercase tracking-widest">Campaigns</p>
+                    <p class="text-xl sm:text-3xl font-bold text-slate-100 mt-1 sm:mt-2" id="stat-total-campaigns">0</p>
+                </div>
+                <div
+                    class="glass border border-emerald-500/20 rounded-2xl p-4 sm:p-6 shadow-lg relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent"></div>
+                    <p class="text-[10px] sm:text-sm font-bold text-emerald-500 uppercase tracking-widest relative">Sent
+                    </p>
+                    <p class="text-xl sm:text-3xl font-bold text-emerald-100 mt-1 sm:mt-2 relative"
+                        id="stat-total-sent">0</p>
+                </div>
+                <div class="glass border border-rose-500/20 rounded-2xl p-4 sm:p-6 shadow-lg relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-rose-500/5 to-transparent"></div>
+                    <p class="text-[10px] sm:text-sm font-bold text-rose-500 uppercase tracking-widest relative">Failed
+                    </p>
+                    <p class="text-xl sm:text-3xl font-bold text-rose-100 mt-1 sm:mt-2 relative" id="stat-total-failed">
+                        0</p>
+                </div>
+                <div class="glass border border-primary/20 rounded-2xl p-4 sm:p-6 shadow-lg relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
+                    <p class="text-[10px] sm:text-sm font-bold text-primary uppercase tracking-widest relative">Rate</p>
+                    <p class="text-xl sm:text-3xl font-bold text-white mt-1 sm:mt-2 relative" id="stat-success-rate">0%
+                    </p>
+                </div>
+            </div>
+
+            <!-- AI Growth Advisor -->
+            <section class="glass border border-indigo-500/20 rounded-3xl overflow-hidden shadow-2xl relative">
+                <div
+                    class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent opacity-50">
+                </div>
+                <div class="p-6 sm:p-8 relative">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-6">
+                        <div>
+                            <h3 class="text-xl font-bold text-indigo-100 flex items-center">
+                                <span class="text-2xl mr-3">✨</span> AI Growth Advisor
+                            </h3>
+                            <p class="text-xs sm:text-sm text-slate-400 mt-1">Nvidia AI insights derived from your
+                                campaign patterns.</p>
+                        </div>
+                        <button id="getAdviceBtn"
+                            class="w-full md:w-auto px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
+                                fill="currentColor">
+                                <path fill-rule="evenodd"
+                                    d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            Generate Insights
+                        </button>
+                    </div>
+
+                    <div id="adviceContainer" class="hidden mt-6">
+                        <div class="bg-slate-900/50 border border-indigo-500/20 rounded-2xl p-6 font-mono text-sm text-indigo-50 whitespace-pre-wrap leading-relaxed max-h-[350px] overflow-y-auto custom-scrollbar"
+                            id="adviceContent"></div>
+                    </div>
+
+                    <div id="adviceLoading" class="hidden flex flex-col items-center justify-center py-12">
+                        <div
+                            class="w-12 h-12 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin mb-4">
+                        </div>
+                        <p class="text-indigo-400 text-sm font-bold uppercase tracking-widest animate-pulse">Running AI
+                            Audit...</p>
+                    </div>
+
+                    <div id="adviceEmpty" class="text-center py-12">
+                        <div
+                            class="w-16 h-16 bg-slate-800/30 rounded-full flex items-center justify-center mx-auto mb-4 border border-dark-border text-2xl">
+                            💡</div>
+                        <p class="text-slate-500 text-sm max-w-xs mx-auto">Analyze your performance to unlock automated
+                            marketing strategy tips.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Campaign History -->
+            <section class="glass border border-dark-border rounded-3xl overflow-hidden shadow-xl">
+                <div class="p-6 border-b border-dark-border bg-slate-800/30 flex justify-between items-center">
+                    <h3 class="font-bold text-lg flex items-center gap-3">
+                        <span class="p-1 px-2 bg-slate-800 rounded-lg text-xs">📜</span>
+                        Campaign History
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr
+                                class="bg-slate-900/50 text-slate-500 text-[10px] uppercase tracking-widest border-b border-dark-border">
+                                <th class="p-4 pl-6 font-bold">Date</th>
+                                <th class="p-4 font-bold">Campaign</th>
+                                <th class="p-4 font-bold">Type</th>
+                                <th class="p-4 font-bold text-center">Score</th>
+                                <th class="p-4 pr-6 font-bold text-right">Target</th>
+                            </tr>
+                        </thead>
+                        <tbody id="campaignTableBody" class="text-slate-300 text-sm divide-y divide-dark-border/30">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- States -->
+                <div id="tableEmpty" class="hidden py-16 text-center">
+                    <p class="text-slate-500 text-sm">No campaigns recorded yet.</p>
+                </div>
+                <div id="tableLoading" class="py-16 text-center flex flex-col items-center">
+                    <div class="w-8 h-8 border-4 border-slate-700 border-t-indigo-500 rounded-full animate-spin mb-4">
+                    </div>
+                    <p class="text-slate-500 text-xs">Fetching history...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Check Authentication strictly
+        fetch('/api/check-auth')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.authenticated) {
+                    window.location.href = 'login.html';
+                }
+            })
+            .catch(() => {
+                window.location.href = 'login.html';
+            });
+
+        // Handle Logout
+        document.getElementById('logoutBtn')?.addEventListener('click', async () => {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = 'login.html';
+        });
+    </script>
+    <script src="analytics.js" defer></script>
+    <script>
+        // Mobile Menu Logic
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileMenuContent = document.getElementById('mobileMenuContent');
+        const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+
+        function toggleMenu(show) {
+            if (show) {
+                mobileMenu.classList.remove('hidden');
+                setTimeout(() => {
+                    mobileMenuContent.classList.remove('translate-x-full');
+                    mobileMenuOverlay.classList.remove('opacity-0');
+                }, 10);
+            } else {
+                mobileMenuContent.classList.add('translate-x-full');
+                mobileMenuOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    mobileMenu.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        mobileMenuBtn?.addEventListener('click', () => toggleMenu(true));
+        closeMobileMenu?.addEventListener('click', () => toggleMenu(false));
+        mobileMenuOverlay?.addEventListener('click', () => toggleMenu(false));
+
+        document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
+            document.getElementById('logoutBtn')?.click();
+        });
+    </script>
+</body>
+
+</html>

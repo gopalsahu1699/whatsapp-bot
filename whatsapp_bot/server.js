@@ -10,7 +10,7 @@ const { createReadStream } = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const { Template, BusinessInfo } = require('./models');
+const { Template, BusinessInfo, Campaign, Contact, ContactList } = require('./models');
 require('dotenv').config();
 
 const app = express();
@@ -340,25 +340,59 @@ app.post('/api/bulk/upload-csv', requireAuth, csvUpload.single('csv'), async (re
             return res.status(400).json({ error: 'No file uploaded' });
         }
 
-        const contacts = [];
+        // Parse CSV and save to database
+        const contactsToSave = [];
         const filePath = req.file.path;
-
-        // Parse CSV
         await new Promise((resolve, reject) => {
             createReadStream(filePath)
                 .pipe(csv())
                 .on('data', (row) => {
-                    contacts.push(row);
+                    // Try to find phone and name with basic field name detection
+                    const phoneField = Object.keys(row).find(k => k.toLowerCase().includes('phone') || k.toLowerCase().includes('number') || k.toLowerCase().includes('mobile'));
+                    const nameField = Object.keys(row).find(k => k.toLowerCase().includes('name'));
+
+                    let name = nameField ? row[nameField] : (phoneField ? row[phoneField] : 'Unknown');
+                    let rawPhone = phoneField ? row[phoneField] : null;
+
+                    if (rawPhone) {
+                        // Clean phone number format
+                        let phone = rawPhone.toString().replace(/\D/g, '');
+                        if (!phone.startsWith('91') && phone.length === 10) {
+                            phone = '91' + phone;
+                        }
+                        contactsToSave.push({ name, phone });
+                    }
                 })
                 .on('end', resolve)
                 .on('error', reject);
         });
 
+        if (contactsToSave.length === 0) {
+            return res.status(400).json({ error: 'No valid contacts found in CSV' });
+        }
+
+        // Create the Contact List entry
+        const newList = new ContactList({
+            name: req.body.listName || req.file.originalname.replace('.csv', ''),
+            filename: req.file.originalname,
+            contactCount: contactsToSave.length
+        });
+        await newList.save();
+
+        // Attach listId to all contacts and save them
+        const finalContacts = contactsToSave.map(c => ({
+            ...c,
+            listId: newList._id
+        }));
+
+        await Contact.insertMany(finalContacts);
+
         res.json({
             success: true,
-            count: contacts.length,
-            contacts: contacts,
-            filePath: `/uploads/csv/${req.file.filename}`
+            count: finalContacts.length,
+            listId: newList._id,
+            listName: newList.name,
+            contacts: finalContacts
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -367,7 +401,19 @@ app.post('/api/bulk/upload-csv', requireAuth, csvUpload.single('csv'), async (re
 
 app.post('/api/bulk/send', requireAuth, async (req, res) => {
     try {
-        const { contacts, templateId, delay } = req.body;
+        const { contacts, templateId, delay, listId } = req.body;
+
+        // If a listId is provided, update usage stats
+        if (listId) {
+            try {
+                await ContactList.findByIdAndUpdate(listId, {
+                    $inc: { usageCount: 1 },
+                    lastUsedAt: new Date()
+                });
+            } catch (err) {
+                console.error('Failed to update list usage stats:', err);
+            }
+        }
 
         if (!whatsappClient || !isClientReady) {
             return res.status(400).json({ error: 'WhatsApp not connected' });
@@ -488,6 +534,76 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
 
         res.end();
 
+        // Save Campaign Analytics
+        try {
+            const campaignData = new Campaign({
+                name: `Campaign - ${template.name} - ${new Date().toLocaleDateString()}`,
+                templateId: template._id,
+                sent: sent,
+                failed: failed,
+                total: contacts.length
+            });
+            await campaignData.save();
+            console.log(`[Analytics] Campaign saved: ${campaignData.name}`);
+        } catch (analyticsErr) {
+            console.error('[Analytics] Failed to save campaign data:', analyticsErr.message);
+        }
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==================== ANALYTICS ROUTES ====================
+
+app.get('/api/analytics', requireAuth, async (req, res) => {
+    try {
+        const campaigns = await Campaign.find().populate('templateId', 'name type').sort({ createdAt: -1 });
+        res.json(campaigns);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/analytics/advice', requireAuth, async (req, res) => {
+    try {
+        const { getCampaignAdvice } = require('./ai');
+
+        // Aggregate overall stats
+        const campaigns = await Campaign.find().sort({ createdAt: -1 }).limit(10); // Analyze last 10 campaigns
+
+        if (campaigns.length === 0) {
+            return res.json({ advice: "You haven't run any campaigns yet! Start by sending your first bulk message to get personalized growth advice." });
+        }
+
+        let totalSent = 0;
+        let totalFailed = 0;
+        let totalContacts = 0;
+
+        const campaignSummaries = campaigns.map(c => {
+            totalSent += c.sent;
+            totalFailed += c.failed;
+            totalContacts += c.total;
+            return {
+                name: c.name,
+                date: c.createdAt,
+                successRate: c.total > 0 ? ((c.sent / c.total) * 100).toFixed(1) + '%' : '0%',
+                sent: c.sent,
+                failed: c.failed
+            };
+        });
+
+        const overallStats = {
+            totalCampaignsAnalyzed: campaigns.length,
+            overallSent: totalSent,
+            overallFailed: totalFailed,
+            overallSuccessRate: totalContacts > 0 ? ((totalSent / totalContacts) * 100).toFixed(1) + '%' : '0%',
+            recentCampaigns: campaignSummaries
+        };
+
+        const advice = await getCampaignAdvice(overallStats);
+        res.json({ advice });
+
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -526,6 +642,123 @@ app.post('/api/training/data', requireAuth, async (req, res) => {
         } else {
             trainingData = new BusinessInfo(data);
             await trainingData.save();
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ==================== CONTACT ROUTES ====================
+
+app.get('/api/contact-lists', requireAuth, async (req, res) => {
+    try {
+        const lists = await ContactList.find().sort({ createdAt: -1 });
+        res.json(lists);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/contact-lists/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const list = await ContactList.findById(id);
+        if (!list) return res.status(404).json({ error: 'List not found' });
+
+        const contacts = await Contact.find({ listId: id }).sort({ name: 1 });
+        res.json({ list, contacts });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/contact-lists/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Delete the list metadata
+        const list = await ContactList.findByIdAndDelete(id);
+        if (!list) return res.status(404).json({ error: 'List not found' });
+
+        // Delete all contacts associated with this list
+        await Contact.deleteMany({ listId: id });
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/contacts', requireAuth, async (req, res) => {
+    try {
+        const contacts = await Contact.find().sort({ createdAt: -1 });
+        res.json(contacts);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/contacts', requireAuth, async (req, res) => {
+    try {
+        let { name, phone } = req.body;
+
+        if (!name || !phone) {
+            return res.status(400).json({ error: 'Name and phone are required' });
+        }
+
+        // Clean phone number format
+        phone = phone.toString().replace(/\D/g, '');
+        if (!phone.startsWith('91') && phone.length === 10) {
+            phone = '91' + phone;
+        }
+
+        const newContact = new Contact({ name, phone });
+        await newContact.save();
+        res.json(newContact);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/contacts/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        let { name, phone } = req.body;
+
+        if (!name || !phone) {
+            return res.status(400).json({ error: 'Name and phone are required' });
+        }
+
+        // Clean phone number format
+        phone = phone.toString().replace(/\D/g, '');
+        if (!phone.startsWith('91') && phone.length === 10) {
+            phone = '91' + phone;
+        }
+
+        const contact = await Contact.findByIdAndUpdate(
+            id,
+            { name, phone },
+            { new: true, runValidators: true }
+        );
+
+        if (!contact) {
+            return res.status(404).json({ error: 'Contact not found' });
+        }
+
+        res.json(contact);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/contacts/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const contact = await Contact.findByIdAndDelete(id);
+
+        if (!contact) {
+            return res.status(404).json({ error: 'Contact not found' });
         }
 
         res.json({ success: true });

@@ -6,7 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Dashboard - Autommensor</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"
+        media="print" onload="this.media='all'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    </noscript>
     <script>
         tailwind.config = {
             theme: {
@@ -44,6 +48,26 @@
             color: #6366f1;
             border-bottom: 2px solid #6366f1;
         }
+
+        .mobile-nav-active {
+            background: rgba(99, 102, 241, 0.1);
+            color: #6366f1;
+            border-left: 4px solid #6366f1;
+        }
+
+        /* Custom scrollbar for mobile */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
     </style>
 </head>
 
@@ -55,24 +79,90 @@
                 <div class="flex justify-between items-center h-16">
                     <div class="flex items-center space-x-8">
                         <h1
-                            class="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-                            🤖 Autommensor
+                            class="text-xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent flex items-center">
+                            <span class="mr-2">🤖</span> Autommensor
                         </h1>
                         <nav id="navMenu" class="hidden md:flex space-x-6">
                             <a href="dashboard.html"
-                                class="nav-link text-sm font-medium hover:text-primary transition-colors py-5 nav-link-active">Dashboard</a>
+                                class="nav-link text-sm font-medium nav-link-active transition-colors py-5">Dashboard</a>
                             <a href="bulk.html"
-                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Bulk
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5">Bulk
                                 Messaging</a>
                             <a href="templates.html"
-                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">Templates</a>
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5">Templates</a>
                             <a href="training.html"
-                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5 border-b-2 border-transparent">AI
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5">AI
                                 Training</a>
+                            <a href="analytics.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5">Analytics</a>
+                            <a href="contacts.html"
+                                class="nav-link text-sm font-medium text-slate-400 hover:text-primary transition-colors py-5">Contacts</a>
                         </nav>
                     </div>
-                    <button id="logoutBtn"
-                        class="px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+
+                    <div class="flex items-center space-x-3">
+                        <button id="logoutBtn"
+                            class="hidden sm:block px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+                        <!-- Mobile Menu Button -->
+                        <button id="mobileMenuBtn"
+                            class="md:hidden p-2 text-slate-400 hover:text-white transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Drawer -->
+            <div id="mobileMenu" class="fixed inset-0 z-[60] md:hidden hidden">
+                <div id="mobileMenuOverlay"
+                    class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity"></div>
+                <div class="absolute right-0 top-0 bottom-0 w-3/4 max-w-xs bg-slate-900 border-l border-dark-border shadow-2xl flex flex-col transform transition-transform duration-300 translate-x-full"
+                    id="mobileMenuContent">
+                    <div class="p-6 border-b border-dark-border flex justify-between items-center">
+                        <span class="font-bold text-indigo-400">Navigation</span>
+                        <button id="closeMobileMenu" class="p-2 text-slate-500 hover:text-white">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <nav class="flex-1 overflow-y-auto p-4 space-y-2">
+                        <a href="dashboard.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl mobile-nav-active font-bold">
+                            <span>🏠</span> <span>Dashboard</span>
+                        </a>
+                        <a href="bulk.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>📤</span> <span>Bulk Messaging</span>
+                        </a>
+                        <a href="templates.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>🗒️</span> <span>Templates</span>
+                        </a>
+                        <a href="training.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>🧠</span> <span>AI Training</span>
+                        </a>
+                        <a href="analytics.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>📊</span> <span>Analytics</span>
+                        </a>
+                        <a href="contacts.html"
+                            class="flex items-center space-x-3 p-4 rounded-xl text-slate-400 hover:bg-slate-800 transition-all">
+                            <span>👤</span> <span>Contacts CRM</span>
+                        </a>
+                    </nav>
+                    <div class="p-6 border-t border-dark-border">
+                        <button id="mobileLogoutBtn"
+                            class="w-full py-4 bg-slate-800 text-red-400 font-bold rounded-2xl border border-red-500/10 active:scale-95 transition-all">
+                            Logout Device
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -167,14 +257,24 @@
                                     <p class="text-xs text-slate-500">Train your automated bot with business info and
                                         FAQ for smart replies.</p>
                                 </a>
-                                <div class="p-6 bg-slate-800/50 border border-dark-border rounded-2xl">
+                                <a href="analytics.html"
+                                    class="p-6 bg-purple-500/10 border border-purple-500/20 rounded-2xl hover:bg-purple-500/20 transition-all group">
                                     <div
-                                        class="w-12 h-12 bg-slate-700 rounded-xl mb-4 flex items-center justify-center text-xl">
+                                        class="w-12 h-12 bg-purple-500 rounded-xl mb-4 flex items-center justify-center text-xl shadow-lg shadow-purple-500/20 group-hover:scale-110 transition-transform">
                                         📊</div>
-                                    <h3 class="font-bold text-lg mb-1">Campaign Analytics</h3>
-                                    <p class="text-xs text-slate-500 italic">Advanced reporting and delivery insights
-                                        coming soon...</p>
-                                </div>
+                                    <h3 class="font-bold text-lg mb-1 text-slate-100">Campaign Analytics</h3>
+                                    <p class="text-xs text-slate-500">View performance insights and get AI-powered
+                                        growth advice.</p>
+                                </a>
+                                <a href="contacts.html"
+                                    class="p-6 bg-rose-500/10 border border-rose-500/20 rounded-2xl hover:bg-rose-500/20 transition-all group">
+                                    <div
+                                        class="w-12 h-12 bg-rose-500 rounded-xl mb-4 flex items-center justify-center text-xl shadow-lg shadow-rose-500/20 group-hover:scale-110 transition-transform">
+                                        👤</div>
+                                    <h3 class="font-bold text-lg mb-1 text-slate-100">Contacts CRM</h3>
+                                    <p class="text-xs text-slate-500">Manage your saved contact lists and selection for
+                                        bulk campaigns.</p>
+                                </a>
                             </div>
                         </div>
                     </section>
@@ -188,7 +288,39 @@
         <div class="w-4 h-4 rounded-full border-2 border-white shadow-lg" id="mobileStatusDot"></div>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js" defer></script>
+    <script>
+        // Mobile Menu Logic
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeMobileMenu = document.getElementById('closeMobileMenu');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileMenuContent = document.getElementById('mobileMenuContent');
+        const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+
+        function toggleMenu(show) {
+            if (show) {
+                mobileMenu.classList.remove('hidden');
+                setTimeout(() => {
+                    mobileMenuContent.classList.remove('translate-x-full');
+                    mobileMenuOverlay.classList.remove('opacity-0');
+                }, 10);
+            } else {
+                mobileMenuContent.classList.add('translate-x-full');
+                mobileMenuOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    mobileMenu.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        mobileMenuBtn?.addEventListener('click', () => toggleMenu(true));
+        closeMobileMenu?.addEventListener('click', () => toggleMenu(false));
+        mobileMenuOverlay?.addEventListener('click', () => toggleMenu(false));
+
+        document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
+            document.getElementById('logoutBtn')?.click();
+        });
+    </script>
 </body>
 
 </html>
