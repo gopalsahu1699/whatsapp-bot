@@ -93,3 +93,41 @@ Update your business information (About Us, Products, FAQ, etc.) to train the AI
 ## 📄 License
 
 ISC License
+
+## 🚀 Railway Deployment Settings
+
+For 24/7 production deployment, this bot is optimized for [Railway.app](https://railway.app/).
+
+### 1. Build and Deployment Configuration
+The repository contains a `railway.json` file which automatically configures the builder.
+- **Provider**: Nixpacks (Default)
+- **Start Command**: `npm start` (Automatically detected)
+- **Healthcheck Path**: `/` (Timeout: 300s)
+- **Restart Policy**: On Failure
+
+*Note: Ensure the `NIXPACKS_PKGS` environment variable is set so Google Chrome installs correctly.*
+
+### 2. Environment Variables (Variables Tab)
+You must configure the following variables in your Railway Dashboard:
+
+**Core Operations (Puppeteer & Chrome)**
+- `NIXPACKS_PKGS` = `nss, freetype, harfbuzz, ca-certificates, alsa-lib, pango, atk, cairo, gdk-pixbuf, glib, gtk3, libXcomposite, libXcursor, libXdamage, libXext, libXfixes, libXi, libXrandr, libXrender, libXtst, dbus, expat, libgcc, libstdc++, nss-mdns, cups`
+
+**Permanent Session & Database**
+- `MONGODB_URI` = `<Your MongoDB Connection String>`
+
+**AI Integration (NVIDIA NIM)**
+- `NVIDIA_API_KEY` = `<Your NVIDIA API Key>`
+- `NVIDIA_MODEL_NAME` = `nvidia/nemotron-3-nano-30b-a3b`
+- `NVIDIA_BASE_URL` = `https://integrate.api.nvidia.com/v1`
+
+**Dashboard Admin & Media**
+- `DASHBOARD_USERNAME` = `admin`
+- `DASHBOARD_PASSWORD` = `<Your Password>`
+- `SESSION_SECRET` = `<Your Secure Random String>`
+- `CLOUDINARY_URL` = `<Your Cloudinary URL>`
+- `NODE_ENV` = `production`
+
+### 3. Networking
+- Railway automatically detects port `8080` (or `3000` locally).
+- Your public domain will look like: `wbot.up.railway.app`
