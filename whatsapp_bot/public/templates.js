@@ -32,6 +32,8 @@ function setupEventListeners() {
     document.getElementById('addTemplateBtn').addEventListener('click', () => showTemplateForm());
     document.getElementById('templateFormElement').addEventListener('submit', saveTemplate);
     document.getElementById('removeImageBtn')?.addEventListener('click', removeCurrentImage);
+    document.getElementById('templateType')?.addEventListener('change', handleTypeChange);
+    document.getElementById('addPollOptionBtn')?.addEventListener('click', () => addPollOption());
 
     // Close modal on overlay click
     document.getElementById('modalOverlay')?.addEventListener('click', hideTemplateForm);
@@ -71,7 +73,10 @@ function renderTemplates() {
     container.innerHTML = templates.map(template => `
         <div class="glass border border-dark-border/40 rounded-2xl p-6 shadow-lg hover:border-primary/50 transition-all group animate-in fade-in zoom-in duration-300">
             <div class="flex justify-between items-start mb-4">
-                <div class="template-name font-bold text-slate-100 group-hover:text-primary transition-colors truncate max-w-[150px]">${escapeHtml(template.name)}</div>
+                <div class="template-name font-bold text-slate-100 group-hover:text-primary transition-colors truncate max-w-[150px] flex items-center gap-2 flex-wrap">
+                    ${escapeHtml(template.name)}
+                    ${template.type === 'poll' ? `<span class="px-2 py-0.5 text-[10px] uppercase font-bold bg-purple-500/20 text-purple-400 rounded-full border border-purple-500/20">Poll</span>` : `<span class="px-2 py-0.5 text-[10px] uppercase font-bold bg-blue-500/20 text-blue-400 rounded-full border border-blue-500/20">Message</span>`}
+                </div>
                 <div class="flex gap-2">
                     <button onclick="editTemplate('${template._id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-all shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -86,9 +91,19 @@ function renderTemplates() {
                 </div>
             </div>
             <div class="template-message text-sm text-slate-400 mb-4 line-clamp-3 leading-relaxed">${escapeHtml(template.message)}</div>
-            ${template.imagePath ? `
+            ${template.imagePath && template.type !== 'poll' ? `
                 <div class="mt-4 rounded-xl overflow-hidden border border-dark-border/50 aspect-video bg-dark-bg/40">
                     <img src="${template.imagePath}" class="w-full h-full object-cover" alt="Template image">
+                </div>
+            ` : ''}
+            ${template.type === 'poll' && template.pollOptions && template.pollOptions.length > 0 ? `
+                <div class="mt-4 space-y-2">
+                    ${template.pollOptions.map((opt, i) => `
+                        <div class="flex items-center gap-3 p-2 bg-dark-bg/50 rounded-lg border border-dark-border/30 text-sm">
+                            <span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">${i + 1}</span>
+                            <span class="text-slate-300 truncate">${escapeHtml(opt)}</span>
+                        </div>
+                    `).join('')}
                 </div>
             ` : ''}
         </div>
@@ -105,6 +120,8 @@ function showTemplateForm(editMode = false) {
         document.getElementById('templateFormElement').reset();
         document.getElementById('templateId').value = '';
         document.getElementById('currentImage').classList.add('hidden');
+        document.getElementById('templateType').value = 'text';
+        handleTypeChange();
     }
 }
 
@@ -119,13 +136,30 @@ async function saveTemplate(e) {
 
     const id = document.getElementById('templateId').value;
     const name = document.getElementById('templateName').value;
+    const type = document.getElementById('templateType').value;
     const message = document.getElementById('templateMessage').value;
     const imageFile = document.getElementById('templateImage').files[0];
 
     const formData = new FormData();
     formData.append('name', name);
+    formData.append('type', type);
     formData.append('message', message);
-    if (imageFile) {
+
+    if (type === 'poll') {
+        const optionInputs = document.querySelectorAll('.poll-option-input');
+        const options = Array.from(optionInputs).map(input => input.value.trim()).filter(val => val !== '');
+        if (options.length < 2) {
+            alert('A poll must have at least 2 options.');
+            return;
+        }
+        if (options.length > 12) {
+            alert('A poll can have a maximum of 12 options.');
+            return;
+        }
+        formData.append('pollOptions', JSON.stringify(options));
+    }
+
+    if (imageFile && type !== 'poll') {
         formData.append('image', imageFile);
     }
 
@@ -147,8 +181,14 @@ async function saveTemplate(e) {
             hideTemplateForm();
             await loadTemplates();
         } else {
-            const error = await response.json();
-            alert('Failed to save template: ' + error.error);
+            let errorMsg = 'Unknown error';
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.error || JSON.stringify(errorData);
+            } catch (jsonErr) {
+                errorMsg = await response.text();
+            }
+            alert('Failed to save template: ' + errorMsg);
         }
     } catch (error) {
         alert('Failed to save template: ' + error.message);
@@ -164,7 +204,16 @@ async function editTemplate(id) {
 
     document.getElementById('templateId').value = template._id;
     document.getElementById('templateName').value = template.name;
+    document.getElementById('templateType').value = template.type || 'text';
     document.getElementById('templateMessage').value = template.message;
+
+    handleTypeChange();
+
+    if (template.type === 'poll' && template.pollOptions) {
+        const list = document.getElementById('pollOptionsList');
+        list.innerHTML = '';
+        template.pollOptions.forEach(opt => addPollOption(opt));
+    }
 
     if (template.imagePath) {
         document.getElementById('currentImagePreview').src = template.imagePath;
@@ -194,6 +243,67 @@ async function deleteTemplate(id) {
 function removeCurrentImage() {
     document.getElementById('currentImage').style.display = 'none';
 }
+
+function handleTypeChange() {
+    const type = document.getElementById('templateType').value;
+    const pollOptionsSection = document.getElementById('pollOptionsSection');
+    const templateImageSection = document.getElementById('templateImageSection');
+    const messageLabel = document.getElementById('messageLabel');
+
+    if (type === 'poll') {
+        pollOptionsSection.classList.remove('hidden');
+        templateImageSection.classList.add('hidden');
+        messageLabel.textContent = 'Poll Question';
+
+        // Ensure at least 2 options exist
+        const list = document.getElementById('pollOptionsList');
+        if (list.children.length < 2) {
+            list.innerHTML = '';
+            addPollOption('Yes');
+            addPollOption('No');
+        }
+    } else {
+        pollOptionsSection.classList.add('hidden');
+        templateImageSection.classList.remove('hidden');
+        messageLabel.textContent = 'Message Body (use {{placeholder}} for variables)';
+    }
+}
+
+function addPollOption(value = '') {
+    const list = document.getElementById('pollOptionsList');
+    if (list.children.length >= 12) {
+        alert('Maximum 12 options allowed');
+        return;
+    }
+
+    const id = Date.now() + Math.random().toString(36).substr(2, 5);
+    const div = document.createElement('div');
+    div.className = 'flex items-center gap-2 group animate-in fade-in slide-in-from-left-2 duration-300';
+    div.id = `option-${id}`;
+
+    div.innerHTML = `
+        <input type="text" class="poll-option-input flex-1 px-4 py-2 bg-dark-bg/60 border border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder-slate-600 text-slate-100 text-sm" placeholder="Option text..." value="${escapeHtml(value)}" required>
+        <button type="button" onclick="removePollOption('${id}')" class="p-2 text-slate-500 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+        </button>
+    `;
+    list.appendChild(div);
+}
+
+function removePollOption(id) {
+    const list = document.getElementById('pollOptionsList');
+    if (list.children.length <= 2) {
+        alert('Minimum 2 options required for a poll');
+        return;
+    }
+    const option = document.getElementById(`option-${id}`);
+    if (option) {
+        option.remove();
+    }
+}
+
 
 // ==================== UTILITIES ====================
 

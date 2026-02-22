@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const templateSchema = new mongoose.Schema({
     name: { type: String, required: true },
     message: { type: String, required: true },
+    type: { type: String, enum: ['text', 'poll'], default: 'text' },
+    pollOptions: { type: [String], default: [] },
     imagePath: { type: String, default: null }, // This will now be the Cloudinary URL
     cloudinaryId: { type: String, default: null }, // To allow deleting images from Cloudinary
     createdAt: { type: Date, default: Date.now },

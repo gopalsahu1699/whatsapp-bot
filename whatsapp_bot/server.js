@@ -255,11 +255,13 @@ app.get('/api/templates', requireAuth, async (req, res) => {
 
 app.post('/api/templates', requireAuth, upload.single('image'), async (req, res) => {
     try {
-        const { name, message } = req.body;
+        const { name, message, type, pollOptions } = req.body;
 
         const newTemplate = new Template({
             name,
             message,
+            type: type || 'text',
+            pollOptions: pollOptions ? JSON.parse(pollOptions) : [],
             imagePath: req.file ? req.file.path : null, // Cloudinary URL
             cloudinaryId: req.file ? req.file.filename : null // Cloudinary public ID
         });
@@ -274,7 +276,7 @@ app.post('/api/templates', requireAuth, upload.single('image'), async (req, res)
 app.put('/api/templates/:id', requireAuth, upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, message, removeImage } = req.body;
+        const { name, message, removeImage, type, pollOptions } = req.body;
 
         const template = await Template.findById(id);
         if (!template) {
@@ -283,6 +285,8 @@ app.put('/api/templates/:id', requireAuth, upload.single('image'), async (req, r
 
         template.name = name;
         template.message = message;
+        template.type = type || 'text';
+        template.pollOptions = pollOptions ? JSON.parse(pollOptions) : [];
 
         if (req.file) {
             // Delete old image from Cloudinary if exists
@@ -426,7 +430,11 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
                 // Optimized path: If image exists, send it. If not, just send text.
                 // We send image first often or as separate message.
 
-                if (cachedMedia) {
+                if (template.type === 'poll') {
+                    const { Poll } = require('whatsapp-web.js');
+                    const poll = new Poll(message, template.pollOptions);
+                    await whatsappClient.sendMessage(chatId, poll);
+                } else if (cachedMedia) {
                     await whatsappClient.sendMessage(chatId, cachedMedia, { caption: message });
                 } else {
                     await whatsappClient.sendMessage(chatId, message);
