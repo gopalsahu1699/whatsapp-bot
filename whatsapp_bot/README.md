@@ -125,7 +125,6 @@ You must configure the following variables in your Railway Dashboard:
 - `DASHBOARD_USERNAME` = `admin`
 - `DASHBOARD_PASSWORD` = `<Your Password>`
 - `SESSION_SECRET` = `<Your Secure Random String>`
-- `CLOUDINARY_URL` = `<Your Cloudinary URL>`
 - `NODE_ENV` = `production`
 
 ### 3. Networking

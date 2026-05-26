@@ -182,12 +182,12 @@
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
             <div class="max-w-4xl mx-auto">
                 <section class="glass border border-dark-border rounded-2xl p-8 shadow-xl">
-                    <div class="flex items-center justify-between mb-8">
-                        <h2 class="text-2xl font-bold flex items-center">
+                    <div class="flex flex-wrap items-center justify-between mb-8 gap-3">
+                        <h2 class="text-xl sm:text-2xl font-bold flex items-center">
                             <span class="mr-3">📤</span> Bulk Messaging Campaign
                         </h2>
                         <span id="campaignBadge"
-                            class="text-[10px] bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20 font-bold uppercase tracking-widest italic">Ready
+                            class="hidden sm:inline-block text-[10px] bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/20 font-bold uppercase tracking-widest italic">Ready
                             to blast</span>
                     </div>
 
@@ -312,11 +312,12 @@
                                                     Delay (Recommended: 20s)</label>
                                                 <select id="bulkDelaySelect"
                                                     class="w-full px-4 py-3.5 bg-dark-bg/50 border border-dark-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-sm">
-                                                    <option value="4-8">Smart Random (4-8 sec) - Fast</option>
+                                                    
                                                     <option value="10">10 Seconds - Steady</option>
                                                     <option value="20" selected>20 Seconds - Safe (Normal)</option>
                                                     <option value="30">30 Seconds - Extra Safe</option>
                                                     <option value="60">1 Minute - Maximum Safety</option>
+                                                    <option value="40-80">Smart Random (40-80 sec) Maximum Safety </option>
                                                 </select>
                                             </div>
                                         </div>
@@ -359,7 +360,7 @@
                                             <div class="flex justify-between items-end">
                                                 <div class="flex flex-col">
                                                     <span id="progressText"
-                                                        class="text-5xl font-black text-white italic tracking-tighter leading-none">0%</span>
+                                                        class="text-3xl sm:text-5xl font-black text-white italic tracking-tighter leading-none">0%</span>
                                                     <span id="currentProcess"
                                                         class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest mt-2">Initializing...</span>
                                                 </div>

@@ -160,8 +160,8 @@
 
         <!-- Main Content -->
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 space-y-8">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-bold flex items-center">
+            <div class="flex flex-wrap justify-between items-center gap-3">
+                <h2 class="text-xl sm:text-2xl font-bold flex items-center">
                     <span class="mr-3 text-2xl">📊</span> Analytics
                 </h2>
                 <button id="refreshBtn"
@@ -266,11 +266,11 @@
                         <thead>
                             <tr
                                 class="bg-slate-900/50 text-slate-500 text-[10px] uppercase tracking-widest border-b border-dark-border">
-                                <th class="p-4 pl-6 font-bold">Date</th>
-                                <th class="p-4 font-bold">Campaign</th>
-                                <th class="p-4 font-bold">Type</th>
-                                <th class="p-4 font-bold text-center">Score</th>
-                                <th class="p-4 pr-6 font-bold text-right">Target</th>
+                                <th class="p-3 sm:p-4 pl-4 sm:pl-6 font-bold">Date</th>
+                                <th class="p-3 sm:p-4 font-bold">Campaign</th>
+                                <th class="p-3 sm:p-4 font-bold hidden md:table-cell">Type</th>
+                                <th class="p-3 sm:p-4 font-bold text-center hidden sm:table-cell">Score</th>
+                                <th class="p-3 sm:p-4 pr-4 sm:pr-6 font-bold text-right">Target</th>
                             </tr>
                         </thead>
                         <tbody id="campaignTableBody" class="text-slate-300 text-sm divide-y divide-dark-border/30">

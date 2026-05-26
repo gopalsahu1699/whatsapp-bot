@@ -1,0 +1,101 @@
+[
+  {
+    "id": "1779784764877",
+    "name": "Campaign - dsfghg - 26/5/2026",
+    "template_id": "1795bc35-0967-4a79-a9c8-dae9550f8f1a",
+    "template_name": "dsfghg",
+    "template_type": "text",
+    "sent": 0,
+    "failed": 2,
+    "total": 2,
+    "created_at": "2026-05-26T08:39:24.945Z"
+  },
+  {
+    "id": "1779784864018",
+    "name": "Campaign - dsfghg - 26/5/2026",
+    "template_id": "1795bc35-0967-4a79-a9c8-dae9550f8f1a",
+    "template_name": "dsfghg",
+    "template_type": "text",
+    "sent": 2,
+    "failed": 0,
+    "total": 2,
+    "created_at": "2026-05-26T08:41:04.018Z"
+  },
+  {
+    "id": "1779785099654",
+    "name": "Campaign - dsfghgsdfghjkl - 26/5/2026",
+    "template_id": "fd21e395-ed83-4f79-9baf-cc7e0fd66410",
+    "template_name": "dsfghgsdfghjkl",
+    "template_type": "poll",
+    "sent": 2,
+    "failed": 0,
+    "total": 2,
+    "created_at": "2026-05-26T08:44:59.655Z"
+  },
+  {
+    "id": "1779792744393",
+    "name": "Campaign - First Introduction (Cold Audience) - 26/5/2026",
+    "template_id": "d13e1e91-8374-43a6-a6c7-0e37802d9e3a",
+    "template_name": "First Introduction (Cold Audience)",
+    "template_type": "text",
+    "sent": 3,
+    "failed": 0,
+    "total": 3,
+    "created_at": "2026-05-26T10:52:24.418Z"
+  },
+  {
+    "id": "1779793160121",
+    "name": "Campaign - builders and architects - 26/5/2026",
+    "template_id": "efd0c8ef-f8b3-40fc-9624-540b12c6f59f",
+    "template_name": "builders and architects",
+    "template_type": "text",
+    "sent": 3,
+    "failed": 0,
+    "total": 3,
+    "created_at": "2026-05-26T10:59:20.121Z"
+  },
+  {
+    "id": "1779794333332",
+    "name": "Campaign - First Introduction (Cold Audience) - 26/5/2026",
+    "template_id": "d13e1e91-8374-43a6-a6c7-0e37802d9e3a",
+    "template_name": "First Introduction (Cold Audience)",
+    "template_type": "text",
+    "sent": 3,
+    "failed": 0,
+    "total": 3,
+    "created_at": "2026-05-26T11:18:53.333Z"
+  },
+  {
+    "id": "1779794682631",
+    "name": "Campaign - First Introduction (Cold Audience) - 26/5/2026",
+    "template_id": "d13e1e91-8374-43a6-a6c7-0e37802d9e3a",
+    "template_name": "First Introduction (Cold Audience)",
+    "template_type": "text",
+    "sent": 2,
+    "failed": 0,
+    "total": 2,
+    "created_at": "2026-05-26T11:24:42.631Z"
+  },
+  {
+    "id": "1779795452214",
+    "name": "Campaign - builders and architects - 26/5/2026",
+    "template_id": "efd0c8ef-f8b3-40fc-9624-540b12c6f59f",
+    "template_name": "builders and architects",
+    "template_type": "text",
+    "sent": 3,
+    "failed": 0,
+    "total": 3,
+    "created_at": "2026-05-26T11:37:32.214Z"
+  },
+  {
+    "id": "1779795618440",
+    "name": "Campaign - First Introduction (Cold Audience) - 26/5/2026",
+    "template_id": "d13e1e91-8374-43a6-a6c7-0e37802d9e3a",
+    "template_name": "First Introduction (Cold Audience)",
+    "template_type": "text",
+    "sent": 3,
+    "failed": 0,
+    "total": 3,
+    "created_at": "2026-05-26T11:40:18.440Z"
+  }
+]

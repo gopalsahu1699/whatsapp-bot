@@ -2,72 +2,99 @@ require('dotenv').config();
 const { Client, LocalAuth, RemoteAuth, MessageMedia } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const { getAIResponse } = require('./ai');
-const { MongoStore } = require('wwebjs-mongo');
-const mongoose = require('mongoose');
+const { SupabaseAuthStore } = require('./SupabaseAuthStore');
+const { supabase } = require('./supabase');
 const { startServer } = require('./server');
+const fs = require('fs');
+const path = require('path');
 
 let client;
 let isInitializing = false;
 
 // Initialize the client
 function createClient(executablePath, authStrategy) {
+    const isProd = process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.NODE_ENV === 'production' || process.env.PORT;
+    
+    // On local Windows machines, avoid flags like '--single-process' and '--no-zygote' as they cause Chromium to hang/crash.
+    const defaultArgs = [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--disable-gpu',
+        '--no-default-browser-check',
+        '--disable-extensions'
+    ];
+
+    if (isProd) {
+        defaultArgs.push('--no-zygote', '--single-process', '--js-flags="--max-old-space-size=400"');
+    }
+
     return new Client({
         authStrategy: authStrategy,
         authTimeoutMs: 60000,
         qrMaxRetries: 5,
         puppeteer: {
             executablePath: executablePath,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--single-process',
-                '--disable-gpu',
-                '--no-default-browser-check',
-                '--disable-extensions',
-                '--js-flags="--max-old-space-size=400"'
-            ],
-            headless: true
+            args: defaultArgs,
+            headless: true,
+            userDataDir: process.env.USER_DATA_DIR
         }
     });
 }
 
 async function startBot() {
+    // If a previous client instance is still alive, destroy it to avoid "browser already running" conflicts
+    if (client) {
+        try {
+            await client.destroy();
+            console.log('[Init] Destroyed previous client instance');
+        } catch (e) {
+            console.warn('[Init] Failed to destroy previous client:', e);
+        }
+        client = null;
+    }
     if (isInitializing) return;
     isInitializing = true;
 
     console.log('Starting bot...');
 
     let authStrategy;
-    if (process.env.MONGODB_URI) {
-        console.log('Connecting to MongoDB for session storage...');
+    if (process.env.SUPABASE_URL && (process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY)) {
+        console.log('Connecting to Supabase for session storage...');
         try {
-            if (mongoose.connection.readyState === 0) {
-                await mongoose.connect(process.env.MONGODB_URI);
-            }
-            const store = new MongoStore({ mongoose: mongoose });
+            const store = new SupabaseAuthStore(supabase);
             authStrategy = new RemoteAuth({
                 clientId: 'whatsapp-bot',
                 store: store,
                 backupSyncIntervalMs: 300000
             });
-            console.log('RemoteAuth strategy initialized.');
+            console.log('RemoteAuth strategy initialized with Supabase.');
         } catch (err) {
-            console.error('MongoDB connection failed, falling back to LocalAuth:', err);
+            console.error('Supabase session storage initialization failed, falling back to LocalAuth:', err);
             authStrategy = new LocalAuth();
         }
     } else {
-        console.log('No MONGODB_URI found, using LocalAuth.');
+        console.log('No Supabase credentials found, using LocalAuth.');
         authStrategy = new LocalAuth();
     }
 
+    // Use a unique auth directory per start to avoid stale sessions
+    const authDir = path.join(process.cwd(), `.wwebjs_auth_${Date.now()}`);
+    fs.mkdirSync(authDir, { recursive: true });
+    console.log(`[Init] Created ${authDir} directory for session storage`);
+    // Apply USER_DATA_DIR only when using LocalAuth; RemoteAuth manages its own storage via Supabase.
+    if (authStrategy && authStrategy.constructor && authStrategy.constructor.name === 'LocalAuth') {
+        process.env.USER_DATA_DIR = authDir;
+        console.log('[Init] USER_DATA_DIR set for LocalAuth');
+        } else {
+        console.log('[Init] RemoteAuth in use; skipping USER_DATA_DIR');
+        // Ensure no leftover USER_DATA_DIR env var interferes with RemoteAuth
+        delete process.env.USER_DATA_DIR;
+    }
     let executablePath = process.env.CHROME_PATH || undefined;
     if (!executablePath && (process.env.RAILWAY_ENVIRONMENT || process.env.RENDER || process.env.NODE_ENV === 'production' || process.env.PORT)) {
-        const fs = require('fs');
-        const path = require('path');
         const baseDir = path.join(__dirname, '.puppeteer-cache');
 
         function findChrome(dir) {
@@ -91,6 +118,16 @@ async function startBot() {
         executablePath = findChrome(baseDir);
     }
 
+    // Ensure we have a valid Chrome executable path on Windows when not in production
+    if (!executablePath && process.platform === 'win32') {
+        const possiblePaths = [
+            'C:/Program Files/Google/Chrome/Application/chrome.exe',
+            'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe'
+        ];
+        for (const p of possiblePaths) {
+            if (fs.existsSync(p)) { executablePath = p; break; }
+        }
+    }
     client = createClient(executablePath, authStrategy);
 
     // --- Events ---
@@ -159,17 +196,33 @@ async function startBot() {
                 return;
             }
 
+            console.log(`🟢 Received message from ${msg.from}: ${msg.body}`);
             const aiResponse = await getAIResponse(msg.body);
-            const typingTime = Math.min(Math.max(aiResponse.length * 50, 2000), 7000);
+            // Log the AI response for debugging
+            console.log('AI response:', aiResponse);
+            // If the response is empty, send a default message
+            const replyText = aiResponse && aiResponse.trim().length > 0 ? aiResponse : "I'm sorry, I couldn't generate a response at the moment. Please try again later.";
+            const typingTime = Math.min(Math.max(replyText.length * 50, 2000), 7000);
             await new Promise(resolve => setTimeout(resolve, typingTime));
-            await msg.reply(aiResponse);
+            await msg.reply(replyText);
+            console.log('✅ Replied to user');
 
         } catch (error) {
             console.error('Error handling message:', error);
+            // Inform user that something went wrong
+            try {
+                await msg.reply('Sorry, there was an internal error processing your message. Please try again later.');
+            } catch (e) {
+                console.error('Failed to send error reply:', e);
+            }
         }
     }
 
     client.on('message', async msg => {
+        // Ignore messages sent by the bot itself to prevent duplicate replies
+        if (client.info && client.info.wid && msg.from === client.info.wid._serialized) {
+            return;
+        }
         const chatId = msg.from;
         const previousTask = chatQueues.get(chatId) || Promise.resolve();
         const currentTask = previousTask

@@ -1,6 +1,28 @@
 const express = require('express');
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
+const app = express();
+const PORT = process.env.PORT || 3000; // Port configuration
+
+const { supabase } = require('./supabase');
+const {
+  getAllTemplates,
+  getTemplateById,
+  createTemplate,
+  updateTemplate,
+  deleteTemplate,
+  getBusinessInfo,
+  upsertBusinessInfo,
+  insertCampaign,
+  getAllCampaigns,
+  createContactList,
+  getAllContactLists,
+  getContactListById,
+  deleteContactList,
+  insertContacts,
+  getContactsByListId,
+  updateContactListUsage
+} = require('./supabaseModels');
+
 const multer = require('multer');
 const fs = require('fs').promises;
 const path = require('path');
@@ -8,33 +30,33 @@ const QRCode = require('qrcode');
 const csv = require('csv-parser');
 const { createReadStream } = require('fs');
 const { v4: uuidv4 } = require('uuid');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const { Template, BusinessInfo, Campaign, Contact, ContactList } = require('./models');
-require('dotenv').config();
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Cloudinary Configuration
-cloudinary.config({
-    cloudinary_url: process.env.CLOUDINARY_URL
-});
-
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'whatsapp-bot',
-        allowed_formats: ['jpg', 'png', 'jpeg'],
-        transformation: [{ width: 1000, height: 1000, crop: 'limit' }]
+// Supabase bucket for template images (fallback to 'templates')
+const templateBucket = process.env.SUPABASE_BUCKET || 'templates';
+// Verify bucket exists at startup
+(async () => {
+  const { data: bucketInfo, error: bucketErr } = await supabase.storage.getBucket(templateBucket);
+  if (bucketErr) {
+    console.error(`❌ Supabase bucket "${templateBucket}" not found. Create it in the dashboard or update SUPABASE_BUCKET in .env.`);
+    process.exit(1);
+  }
+})();
+// Use disk storage for temporary file handling before uploading to Supabase
+const templateStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, os.tmpdir());
     },
+    filename: function (req, file, cb) {
+        const uniqueName = `${Date.now()}-${file.originalname}`;
+        cb(null, uniqueName);
+    }
 });
-
-const upload = multer({ storage: storage });
+// Multer instance for handling template image uploads
+const upload = multer({ storage: templateStorage });
 
 const os = require('os');
 
-// Separate storage for CSV files (Local storage, not Cloudinary)
+// Cloudinary integration removed; using Supabase storage for template images
+
 const csvStorage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, os.tmpdir());
@@ -79,16 +101,11 @@ const sessionConfig = {
     }
 };
 
-// Use MongoDB for session storage if available
-if (process.env.MONGODB_URI) {
-    const storeFactory = (typeof MongoStore.create === 'function') ? MongoStore : MongoStore.default;
-    sessionConfig.store = storeFactory.create({
-        mongoUrl: process.env.MONGODB_URI,
-        ttl: 7 * 24 * 60 * 60 // 7 days
-    });
-}
+let sessionMiddleware = session(sessionConfig);
 
-app.use(session(sessionConfig));
+app.use((req, res, next) => {
+  sessionMiddleware(req, res, next);
+});
 
 // WhatsApp client (will be set from index.js)
 let whatsappClient = null;
@@ -246,30 +263,122 @@ app.post('/api/whatsapp/restart', requireAuth, async (req, res) => {
 
 app.get('/api/templates', requireAuth, async (req, res) => {
     try {
-        const templates = await Template.find().sort({ createdAt: -1 });
-        res.json(templates);
+        const templates = await getAllTemplates();
+        // Ensure each template has a valid public URL for the image
+        const enrichedTemplates = await Promise.all(templates.map(async (t) => {
+          if (t.cloudinary_id) {
+            const { data: { publicUrl } } = supabase.storage.from(templateBucket).getPublicUrl(t.cloudinary_id);
+            t.image_path = publicUrl;
+          }
+          return t;
+        }));
+        res.json(enrichedTemplates);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.warn('[Templates] MongoDB find failed, falling back to templates.json:', error.message);
+        try {
+            const data = await fs.readFile(path.join(__dirname, 'templates.json'), 'utf8');
+            const localTemplates = JSON.parse(data);
+            res.json(localTemplates);
+        } catch (fileErr) {
+            res.status(500).json({ error: `Database error and templates.json fallback failed: ${error.message}` });
+        }
+    }
+});
+
+app.get('/api/templates/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        let template;
+        try {
+            template = await getTemplateById(id);
+        } catch (dbErr) {
+            if (dbErr.code === 'PGRST116') {
+                // Not found in Supabase database, let's check templates.json fallback
+                try {
+                    const data = await fs.readFile(path.join(__dirname, 'templates.json'), 'utf8');
+                    const localTemplates = JSON.parse(data);
+                    template = localTemplates.find(t => (t.id == id || t._id == id));
+                } catch (fileErr) {
+                    // Fallback file doesn't exist or read error, but we know it's a 404 from DB
+                }
+            } else {
+                // Real database error, throw to outer catch
+                throw dbErr;
+            }
+        }
+
+        if (!template) {
+            return res.status(404).json({ error: 'Template not found' });
+        }
+
+        if (template.cloudinary_id) {
+            const { data: { publicUrl } } = supabase.storage.from(templateBucket).getPublicUrl(template.cloudinary_id);
+            template.image_path = publicUrl;
+        }
+        res.json(template);
+    } catch (error) {
+        console.error(`[Templates] GET single template error:`, error);
+        res.status(500).json({ error: error.message || 'Failed to retrieve template' });
     }
 });
 
 app.post('/api/templates', requireAuth, upload.single('image'), async (req, res) => {
+    const { name, message, type, pollOptions } = req.body;
     try {
-        const { name, message, type, pollOptions } = req.body;
+        let image_path = null;
+        let storage_path = null;
+        if (req.file) {
+            const fs = require('fs').promises;
+            const fileBuffer = await fs.readFile(req.file.path);
+            const fileName = `${Date.now()}-${req.file.originalname}`;
+            const { data: uploadData, error: uploadError } = await supabase.storage.from(templateBucket).upload(fileName, fileBuffer, {
+                upsert: false,
+                contentType: req.file.mimetype,
+            });
+            if (uploadError) throw uploadError;
+            const { data: { publicUrl } } = supabase.storage.from(templateBucket).getPublicUrl(fileName);
+            image_path = publicUrl;
+            storage_path = fileName;
+        }
 
-        const newTemplate = new Template({
+        const templateData = {
             name,
             message,
             type: type || 'text',
-            pollOptions: pollOptions ? JSON.parse(pollOptions) : [],
-            imagePath: req.file ? req.file.path : null, // Cloudinary URL
-            cloudinaryId: req.file ? req.file.filename : null // Cloudinary public ID
-        });
-
-        await newTemplate.save();
-        res.json(newTemplate);
+            poll_options: pollOptions ? JSON.parse(pollOptions) : [],
+            image_path: image_path,
+            cloudinary_id: storage_path
+        };
+        const createdTemplate = await createTemplate(templateData);
+        res.json(createdTemplate);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.warn('[Templates] MongoDB save failed, saving to templates.json fallback:', error.message);
+        try {
+            let localTemplates = [];
+            try {
+                const data = await fs.readFile(path.join(__dirname, 'templates.json'), 'utf8');
+                localTemplates = JSON.parse(data);
+            } catch (readErr) {
+                // Ignore read error if file doesn't exist
+            }
+            
+            const newLocalTemplate = {
+                id: Date.now(),
+                name,
+                message,
+                type: type || 'text',
+                pollOptions: pollOptions ? JSON.parse(pollOptions) : [],
+                imagePath: req.file ? req.file.path : null,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            localTemplates.push(newLocalTemplate);
+            await fs.writeFile(path.join(__dirname, 'templates.json'), JSON.stringify(localTemplates, null, 2), 'utf8');
+            res.json(newLocalTemplate);
+        } catch (fileErr) {
+            res.status(500).json({ error: `Database error and templates.json fallback failed: ${error.message}` });
+        }
     }
 });
 
@@ -278,34 +387,54 @@ app.put('/api/templates/:id', requireAuth, upload.single('image'), async (req, r
         const { id } = req.params;
         const { name, message, removeImage, type, pollOptions } = req.body;
 
-        const template = await Template.findById(id);
+        const template = await getTemplateById(id);
         if (!template) {
             return res.status(404).json({ error: 'Template not found' });
         }
 
-        template.name = name;
-        template.message = message;
-        template.type = type || 'text';
-        template.pollOptions = pollOptions ? JSON.parse(pollOptions) : [];
+        const updates = {
+            name,
+            message,
+            type: type || 'text',
+            poll_options: pollOptions ? JSON.parse(pollOptions) : []
+        };
 
         if (req.file) {
-            // Delete old image from Cloudinary if exists
-            if (template.cloudinaryId) {
-                try { await cloudinary.uploader.destroy(template.cloudinaryId); } catch (err) { }
+            // Delete existing image from Supabase storage first if it exists
+            if (template.cloudinary_id) {
+                try {
+                    await supabase.storage.from(templateBucket).remove([template.cloudinary_id]);
+                } catch (e) {
+                    console.warn('Failed to delete old image from storage:', e.message);
+                }
             }
-            template.imagePath = req.file.path;
-            template.cloudinaryId = req.file.filename;
+            // Upload new image to Supabase
+            const fs = require('fs').promises;
+            const fileBuffer = await fs.readFile(req.file.path);
+            const fileName = `${Date.now()}-${req.file.originalname}`;
+            const { data: uploadData, error: uploadError } = await supabase.storage.from(templateBucket).upload(fileName, fileBuffer, {
+                upsert: false,
+                contentType: req.file.mimetype,
+            });
+            if (uploadError) throw uploadError;
+            const { data: { publicUrl } } = supabase.storage.from(templateBucket).getPublicUrl(fileName);
+            updates.image_path = publicUrl;
+            updates.cloudinary_id = fileName;
         } else if (removeImage === 'true') {
-            if (template.cloudinaryId) {
-                try { await cloudinary.uploader.destroy(template.cloudinaryId); } catch (err) { }
+            // Delete existing image from storage if user explicitly requested removal
+            if (template.cloudinary_id) {
+                try {
+                    await supabase.storage.from(templateBucket).remove([template.cloudinary_id]);
+                } catch (e) {
+                    console.warn('Failed to delete image from storage:', e.message);
+                }
             }
-            template.imagePath = null;
-            template.cloudinaryId = null;
+            updates.image_path = null;
+            updates.cloudinary_id = null;
         }
 
-        template.updatedAt = Date.now();
-        await template.save();
-        res.json(template);
+        const updatedTemplate = await updateTemplate(id, updates);
+        res.json(updatedTemplate);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -313,22 +442,28 @@ app.put('/api/templates/:id', requireAuth, upload.single('image'), async (req, r
 
 app.delete('/api/templates/:id', requireAuth, async (req, res) => {
     try {
-        const { id } = req.params;
-        const template = await Template.findById(id);
-
+        const id = req.params.id;
+        if (!id) {
+            return res.status(400).json({ error: 'Template ID is required' });
+        }
+        const template = await getTemplateById(id);
         if (!template) {
             return res.status(404).json({ error: 'Template not found' });
         }
-
-        // Delete associated image from Cloudinary
-        if (template.cloudinaryId) {
-            try { await cloudinary.uploader.destroy(template.cloudinaryId); } catch (err) { }
+        // Delete associated image from Supabase
+        if (template.cloudinary_id) {
+            try {
+                await supabase.storage.from(templateBucket).remove([template.cloudinary_id]);
+            } catch (err) {
+                console.warn('Failed to delete image from storage:', err.message);
+            }
         }
-
-        await Template.findByIdAndDelete(id);
+        // Delete the template record
+        await deleteTemplate(id);
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Delete template error:', error);
+        res.status(500).json({ error: error.message || 'Failed to delete template' });
     }
 });
 
@@ -351,8 +486,8 @@ app.post('/api/bulk/upload-csv', requireAuth, csvUpload.single('csv'), async (re
                     const phoneField = Object.keys(row).find(k => k.toLowerCase().includes('phone') || k.toLowerCase().includes('number') || k.toLowerCase().includes('mobile'));
                     const nameField = Object.keys(row).find(k => k.toLowerCase().includes('name'));
 
-                    let name = nameField ? row[nameField] : (phoneField ? row[phoneField] : 'Unknown');
-                    let rawPhone = phoneField ? row[phoneField] : null;
+                    let name = nameField ? row[nameField]?.trim() : 'Unknown';
+                    let rawPhone = phoneField ? row[phoneField]?.trim() : null;
 
                     if (rawPhone) {
                         // Clean phone number format
@@ -372,25 +507,24 @@ app.post('/api/bulk/upload-csv', requireAuth, csvUpload.single('csv'), async (re
         }
 
         // Create the Contact List entry
-        const newList = new ContactList({
+        const listData = {
             name: req.body.listName || req.file.originalname.replace('.csv', ''),
             filename: req.file.originalname,
-            contactCount: contactsToSave.length
-        });
-        await newList.save();
+            contact_count: contactsToSave.length
+        };
+        const newList = await createContactList(listData);
 
         // Attach listId to all contacts and save them
         const finalContacts = contactsToSave.map(c => ({
             ...c,
-            listId: newList._id
+            list_id: newList.id
         }));
-
-        await Contact.insertMany(finalContacts);
+        await insertContacts(finalContacts);
 
         res.json({
             success: true,
             count: finalContacts.length,
-            listId: newList._id,
+            listId: newList.id,
             listName: newList.name,
             contacts: finalContacts
         });
@@ -406,10 +540,7 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
         // If a listId is provided, update usage stats
         if (listId) {
             try {
-                await ContactList.findByIdAndUpdate(listId, {
-                    $inc: { usageCount: 1 },
-                    lastUsedAt: new Date()
-                });
+                await updateContactListUsage(listId);
             } catch (err) {
                 console.error('Failed to update list usage stats:', err);
             }
@@ -419,7 +550,7 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'WhatsApp not connected' });
         }
 
-        const template = await Template.findById(templateId);
+        const template = await getTemplateById(templateId);
 
         if (!template) {
             return res.status(404).json({ error: 'Template not found' });
@@ -435,10 +566,10 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
 
         // Pre-load media if template has an image to avoid redundant loads in the loop
         let cachedMedia = null;
-        if (template.imagePath) {
+        if (template.image_path) {
             try {
                 const { MessageMedia } = require('whatsapp-web.js');
-                cachedMedia = await MessageMedia.fromUrl(template.imagePath);
+                cachedMedia = await MessageMedia.fromUrl(template.image_path);
                 console.log('Template media cached for bulk sending');
             } catch (err) {
                 console.error('Failed to pre-load template media:', err.message);
@@ -478,7 +609,7 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
 
                 if (template.type === 'poll') {
                     const { Poll } = require('whatsapp-web.js');
-                    const poll = new Poll(message, template.pollOptions);
+                    const poll = new Poll(message, template.poll_options);
                     await whatsappClient.sendMessage(chatId, poll);
                 } else if (cachedMedia) {
                     await whatsappClient.sendMessage(chatId, cachedMedia, { caption: message });
@@ -534,19 +665,40 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
 
         res.end();
 
-        // Save Campaign Analytics
+        // Save Campaign Analytics (both Mongo and local JSON fallback)
+        const campaignPayload = {
+            id: Date.now().toString(),
+            name: `Campaign - ${template.name} - ${new Date().toLocaleDateString()}`,
+            template_id: template.id || 'local',
+            template_name: template.name,
+            template_type: template.type || 'text',
+            sent: sent,
+            failed: failed,
+            total: contacts.length,
+            created_at: new Date().toISOString()
+        };
+
         try {
-            const campaignData = new Campaign({
-                name: `Campaign - ${template.name} - ${new Date().toLocaleDateString()}`,
-                templateId: template._id,
-                sent: sent,
-                failed: failed,
-                total: contacts.length
-            });
-            await campaignData.save();
-            console.log(`[Analytics] Campaign saved: ${campaignData.name}`);
+            await insertCampaign(campaignPayload);
+            console.log(`[Analytics] Campaign saved to Supabase`);
         } catch (analyticsErr) {
-            console.error('[Analytics] Failed to save campaign data:', analyticsErr.message);
+            console.warn('[Analytics] Failed to save campaign to Supabase, using local copy:', analyticsErr.message);
+        }
+
+        // Always save to campaigns.json backup
+        try {
+            let localCampaigns = [];
+            try {
+                const data = await fs.readFile(path.join(__dirname, 'campaigns.json'), 'utf8');
+                localCampaigns = JSON.parse(data);
+            } catch (readErr) {
+                // Ignore file doesn't exist
+            }
+            localCampaigns.push(campaignPayload);
+            await fs.writeFile(path.join(__dirname, 'campaigns.json'), JSON.stringify(localCampaigns, null, 2), 'utf8');
+            console.log('[Analytics] Campaign saved to local campaigns.json backup.');
+        } catch (fileErr) {
+            console.error('[Analytics] Failed to save campaign backup locally:', fileErr.message);
         }
 
     } catch (error) {
@@ -558,10 +710,23 @@ app.post('/api/bulk/send', requireAuth, async (req, res) => {
 
 app.get('/api/analytics', requireAuth, async (req, res) => {
     try {
-        const campaigns = await Campaign.find().populate('templateId', 'name type').sort({ createdAt: -1 });
+        const campaigns = await getAllCampaigns();
         res.json(campaigns);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.warn('[Analytics] Supabase find failed, falling back to campaigns.json:', error.message);
+        try {
+            let campaignsData = '[]';
+            try {
+                campaignsData = await fs.readFile(path.join(__dirname, 'campaigns.json'), 'utf8');
+            } catch (readErr) {
+                // Ignore read error if file doesn't exist yet, we'll write an empty array
+                await fs.writeFile(path.join(__dirname, 'campaigns.json'), '[]', 'utf8');
+            }
+            const localCampaigns = JSON.parse(campaignsData);
+            res.json(localCampaigns);
+        } catch (fileErr) {
+            res.status(500).json({ error: `Database error and campaigns.json fallback failed: ${error.message}` });
+        }
     }
 });
 
@@ -569,9 +734,8 @@ app.get('/api/analytics/advice', requireAuth, async (req, res) => {
     try {
         const { getCampaignAdvice } = require('./ai');
 
-        // Aggregate overall stats
-        const campaigns = await Campaign.find().sort({ createdAt: -1 }).limit(10); // Analyze last 10 campaigns
-
+        let campaigns = await getAllCampaigns();
+        campaigns = campaigns.slice(0, 10); 
         if (campaigns.length === 0) {
             return res.json({ advice: "You haven't run any campaigns yet! Start by sending your first bulk message to get personalized growth advice." });
         }
@@ -613,40 +777,50 @@ app.get('/api/analytics/advice', requireAuth, async (req, res) => {
 
 app.get('/api/training/data', requireAuth, async (req, res) => {
     try {
-        let trainingData = await BusinessInfo.findOne();
+        let trainingData = await getBusinessInfo();
         if (!trainingData) {
-            // Return empty structure if none exists
             trainingData = {
-                aboutUs: '',
+                about_us: '',
                 products: '',
                 faq: '',
-                refundPolicy: '',
+                refund_policy: '',
                 contact: ''
             };
         }
         res.json(trainingData);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.warn('[Training] MongoDB find failed, falling back to business_info.json:', error.message);
+        try {
+            const data = await fs.readFile(path.join(__dirname, 'business_info.json'), 'utf8');
+            const localData = JSON.parse(data);
+            res.json(localData);
+        } catch (fileErr) {
+            res.status(500).json({ error: `Database error and business_info.json fallback failed: ${error.message}` });
+        }
     }
 });
 
 app.post('/api/training/data', requireAuth, async (req, res) => {
+    const data = req.body;
     try {
-        const data = req.body;
-        let trainingData = await BusinessInfo.findOne();
+        await upsertBusinessInfo(data);
 
-        if (trainingData) {
-            Object.assign(trainingData, data);
-            trainingData.updatedAt = Date.now();
-            await trainingData.save();
-        } else {
-            trainingData = new BusinessInfo(data);
-            await trainingData.save();
+        // Also save/backup to local file
+        try {
+            await fs.writeFile(path.join(__dirname, 'business_info.json'), JSON.stringify(data, null, 4), 'utf8');
+        } catch (err) {
+            console.error('Failed to write business_info.json backup:', err.message);
         }
 
         res.json({ success: true });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.warn('[Training] MongoDB save failed, falling back to saving business_info.json directly:', error.message);
+        try {
+            await fs.writeFile(path.join(__dirname, 'business_info.json'), JSON.stringify(data, null, 4), 'utf8');
+            res.json({ success: true, localOnly: true });
+        } catch (fileErr) {
+            res.status(500).json({ error: `Database save failed and local file fallback failed: ${error.message}` });
+        }
     }
 });
 
@@ -654,7 +828,7 @@ app.post('/api/training/data', requireAuth, async (req, res) => {
 
 app.get('/api/contact-lists', requireAuth, async (req, res) => {
     try {
-        const lists = await ContactList.find().sort({ createdAt: -1 });
+        const lists = await getAllContactLists();
         res.json(lists);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -664,10 +838,9 @@ app.get('/api/contact-lists', requireAuth, async (req, res) => {
 app.get('/api/contact-lists/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        const list = await ContactList.findById(id);
+        const list = await getContactListById(id);
         if (!list) return res.status(404).json({ error: 'List not found' });
-
-        const contacts = await Contact.find({ listId: id }).sort({ name: 1 });
+        const contacts = await getContactsByListId(id);
         res.json({ list, contacts });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -678,93 +851,84 @@ app.delete('/api/contact-lists/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
         // Delete the list metadata
-        const list = await ContactList.findByIdAndDelete(id);
-        if (!list) return res.status(404).json({ error: 'List not found' });
-
-        // Delete all contacts associated with this list
-        await Contact.deleteMany({ listId: id });
-
+        const deleted = await deleteContactList(id);
+        if (!deleted) return res.status(404).json({ error: 'List not found' });
+        // Note: contacts are cascade deleted via DB triggers or handled separately.
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
+// Get all contacts (Supabase)
 app.get('/api/contacts', requireAuth, async (req, res) => {
-    try {
-        const contacts = await Contact.find().sort({ createdAt: -1 });
-        res.json(contacts);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+  try {
+    const { data, error } = await supabase.from('contacts').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
+// Create a new contact (Supabase)
 app.post('/api/contacts', requireAuth, async (req, res) => {
-    try {
-        let { name, phone } = req.body;
-
-        if (!name || !phone) {
-            return res.status(400).json({ error: 'Name and phone are required' });
-        }
-
-        // Clean phone number format
-        phone = phone.toString().replace(/\D/g, '');
-        if (!phone.startsWith('91') && phone.length === 10) {
-            phone = '91' + phone;
-        }
-
-        const newContact = new Contact({ name, phone });
-        await newContact.save();
-        res.json(newContact);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+  try {
+    let { name, phone } = req.body;
+    if (!name || !phone) {
+      return res.status(400).json({ error: 'Name and phone are required' });
     }
+    // Clean phone number
+    phone = phone.toString().replace(/\D/g, '');
+    if (!phone.startsWith('91') && phone.length === 10) {
+      phone = '91' + phone;
+    }
+    const { data, error } = await supabase.from('contacts').insert([{ name, phone }]).single();
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
+// Update a contact (Supabase)
 app.put('/api/contacts/:id', requireAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        let { name, phone } = req.body;
-
-        if (!name || !phone) {
-            return res.status(400).json({ error: 'Name and phone are required' });
-        }
-
-        // Clean phone number format
-        phone = phone.toString().replace(/\D/g, '');
-        if (!phone.startsWith('91') && phone.length === 10) {
-            phone = '91' + phone;
-        }
-
-        const contact = await Contact.findByIdAndUpdate(
-            id,
-            { name, phone },
-            { new: true, runValidators: true }
-        );
-
-        if (!contact) {
-            return res.status(404).json({ error: 'Contact not found' });
-        }
-
-        res.json(contact);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+  try {
+    const { id } = req.params;
+    let { name, phone } = req.body;
+    if (!name || !phone) {
+      return res.status(400).json({ error: 'Name and phone are required' });
     }
+    // Clean phone number
+    phone = phone.toString().replace(/\D/g, '');
+    if (!phone.startsWith('91') && phone.length === 10) {
+      phone = '91' + phone;
+    }
+    const { data, error } = await supabase
+      .from('contacts')
+      .update({ name, phone })
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({ error: 'Contact not found' });
+    }
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.delete('/api/contacts/:id', requireAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const contact = await Contact.findByIdAndDelete(id);
-
-        if (!contact) {
-            return res.status(404).json({ error: 'Contact not found' });
-        }
-
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase.from('contacts').delete().eq('id', id).single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Contact not found' });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ==================== START SERVER ====================

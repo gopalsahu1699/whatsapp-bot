@@ -184,9 +184,9 @@
                 <div id="templateModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="modalOverlay"></div>
                     <div id="templateForm"
-                        class="relative w-full max-w-2xl animate-in fade-in zoom-in duration-300 bg-dark-card p-8 rounded-3xl border border-dark-border shadow-2xl overflow-y-auto max-h-[90vh]">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 id="formTitle" class="text-lg font-bold text-slate-300 uppercase tracking-widest">Add
+                        class="relative w-full max-w-full sm:max-w-2xl mx-auto animate-in fade-in zoom-in duration-300 bg-dark-card p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-dark-border shadow-2xl overflow-y-auto max-h-[92vh] sm:max-h-[90vh]">
+                        <div class="flex justify-between items-center mb-5 sm:mb-6">
+                            <h3 id="formTitle" class="text-base sm:text-lg font-bold text-slate-300 uppercase tracking-widest">Add
                                 New Template</h3>
                             <button type="button" onclick="hideTemplateForm()"
                                 class="p-2 text-slate-500 hover:text-white transition-colors">
@@ -197,7 +197,7 @@
                                 </svg>
                             </button>
                         </div>
-                        <form id="templateFormElement" class="space-y-6">
+                        <form id="templateFormElement" class="space-y-4 sm:space-y-6">
                             <input type="hidden" id="templateId">
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -293,6 +293,23 @@
     </div>
 
     <script src="templates.js" defer></script>
+    <!-- View Template Modal -->
+    <div id="viewTemplateModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="viewModalOverlay"></div>
+        <div class="relative w-full max-w-2xl bg-dark-card p-5 sm:p-8 rounded-2xl sm:rounded-3xl border border-dark-border shadow-2xl overflow-y-auto max-h-[92vh] sm:max-h-[90vh]">
+            <div class="flex justify-between items-center mb-5 sm:mb-6">
+                <h3 class="text-base sm:text-lg font-bold text-slate-300 uppercase tracking-widest">View Template</h3>
+                <button type="button" onclick="hideViewTemplateModal()" class="p-2 text-slate-500 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="viewTemplateContent" class="space-y-4">
+                <!-- Content populated via JS -->
+            </div>
+        </div>
+    </div>
     <script>
         // Mobile Menu Logic
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');

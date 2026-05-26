@@ -1,6 +1,7 @@
 require('dotenv').config();
 const OpenAI = require("openai");
-const { BusinessInfo } = require('./models');
+const { supabase } = require('./supabase');
+
 
 // Initialize OpenAI client with NVIDIA's base URL and API key
 const openai = new OpenAI({
@@ -12,16 +13,45 @@ const MODEL_NAME = process.env.NVIDIA_MODEL_NAME || "nvidia/nemotron-3-nano-30b-
 
 async function getAIResponse(userMessage) {
     try {
-        // Fetch business info from MongoDB
-        const businessData = await BusinessInfo.findOne() || {};
+        // Fetch business info from Supabase (may be empty or placeholder)
+        let businessData;
+        try {
+            const { data, error } = await supabase.from('business_info').select('*').single();
+            if (error) {
+                console.warn('Supabase fetch failed for BusinessInfo:', error.message);
+                businessData = {};
+            } else {
+                businessData = data;
+            }
+        } catch (dbErr) {
+            console.warn('Supabase fetch exception for BusinessInfo:', dbErr.message);
+            businessData = {};
+        }
+        // If data appears to be placeholder (short strings) or empty, load from local JSON
+        const isPlaceholder = businessData && (
+            (!businessData.about_us || businessData.about_us.length < 20) &&
+            (!businessData.products || businessData.products.length < 20)
+        );
+        if (!businessData || Object.keys(businessData).length === 0 || isPlaceholder) {
+            try {
+                const fs = require('fs').promises;
+                const path = require('path');
+                const filePath = path.join(__dirname, 'business_info.json');
+                const raw = await fs.readFile(filePath, 'utf8');
+                businessData = JSON.parse(raw);
+            } catch (fallbackErr) {
+                console.warn('Failed to load local business_info.json fallback:', fallbackErr.message);
+                businessData = {};
+            }
+        }
 
         // Construct context from data
         const contextLines = [
             `My Business Name: Autommensor`,
-            `About Us:\n${businessData.aboutUs || ''}`,
+            `About Us:\n${businessData.about_us || ''}`,
             `Products/Services:\n${businessData.products || ''}`,
             `Frequently Asked Questions (FAQ):\n${businessData.faq || ''}`,
-            `Refund Policy:\n${businessData.refundPolicy || ''}`,
+            `Refund Policy:\n${businessData.refund_policy || ''}`,
             `Contact:\n${businessData.contact || ''}`
         ];
         const contextString = contextLines.join('\n\n');
@@ -66,7 +96,30 @@ ${contextString}
 
 async function getCampaignAdvice(campaignStats) {
     try {
-        const businessData = await BusinessInfo.findOne() || {};
+        // Fetch business info from Supabase with fallback to local file
+        let businessData;
+        try {
+            const { data, error } = await supabase
+                .from('business_info')
+                .select('*')
+                .single();
+            if (error) throw error;
+            businessData = data;
+        } catch (dbErr) {
+            console.warn("Supabase fetch failed for BusinessInfo in getCampaignAdvice, loading from business_info.json fallback:", dbErr.message);
+        }
+        if (!businessData) {
+            try {
+                const fs = require('fs').promises;
+                const path = require('path');
+                const data = await fs.readFile(path.join(__dirname, 'business_info.json'), 'utf8');
+                businessData = JSON.parse(data);
+            } catch (fileErr) {
+                console.error("Failed to read business_info.json fallback in getCampaignAdvice:", fileErr.message);
+                businessData = {};
+            }
+        }
+
 
         const contextLines = [
             `My Business Name: Autommensor`,

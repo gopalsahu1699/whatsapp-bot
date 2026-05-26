@@ -29,7 +29,7 @@ function setupEventListeners() {
     document.getElementById('logoutBtn').addEventListener('click', logout);
 
     // Templates
-    document.getElementById('addTemplateBtn').addEventListener('click', () => showTemplateForm());
+    document.getElementById('addTemplateBtn').addEventListener('click', () => { window.location.href = 'add_template.html'; });
     document.getElementById('templateFormElement').addEventListener('submit', saveTemplate);
     document.getElementById('removeImageBtn')?.addEventListener('click', removeCurrentImage);
     document.getElementById('templateType')?.addEventListener('change', handleTypeChange);
@@ -51,12 +51,19 @@ async function logout() {
 async function loadTemplates() {
     try {
         const response = await fetch('/api/templates');
-        templates = await response.json();
+        const data = await response.json();
+        templates = data.map(t => ({
+            ...t,
+            imagePath: t.image_path ?? t.imagePath,
+            pollOptions: t.poll_options ?? t.pollOptions,
+            cloudinaryId: t.cloudinary_id ?? t.cloudinaryId
+        }));
         renderTemplates();
     } catch (error) {
         console.error('Failed to load templates:', error);
     }
 }
+
 
 function renderTemplates() {
     const container = document.getElementById('templatesList');
@@ -78,18 +85,23 @@ function renderTemplates() {
                     ${template.type === 'poll' ? `<span class="px-2 py-0.5 text-[10px] uppercase font-bold bg-purple-500/20 text-purple-400 rounded-full border border-purple-500/20">Poll</span>` : `<span class="px-2 py-0.5 text-[10px] uppercase font-bold bg-blue-500/20 text-blue-400 rounded-full border border-blue-500/20">Message</span>`}
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="editTemplate('${template._id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-all shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                    </button>
-                    <button onclick="deleteTemplate('${template._id}')" class="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg transition-all shadow-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
+            <button onclick="viewTemplate('${template.id || template._id}')" class="p-2 bg-slate-600 hover:bg-slate-500 text-slate-300 hover:text-white rounded-lg transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+            </button>
+            <button type="button" onclick="editTemplate('${template.id || template._id}')" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+            </button>
+            <button onclick="deleteTemplate('${template.id || template._id}')" class="p-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>        </div>
             <div class="template-message text-sm text-slate-400 mb-4 line-clamp-3 leading-relaxed">${escapeHtml(template.message)}</div>
             ${template.imagePath && template.type !== 'poll' ? `
                 <div class="mt-4 rounded-xl overflow-hidden border border-dark-border/50 aspect-video bg-dark-bg/40">
@@ -198,47 +210,36 @@ async function saveTemplate(e) {
     }
 }
 
-async function editTemplate(id) {
-    const template = templates.find(t => t._id == id);
-    if (!template) return;
-
-    document.getElementById('templateId').value = template._id;
-    document.getElementById('templateName').value = template.name;
-    document.getElementById('templateType').value = template.type || 'text';
-    document.getElementById('templateMessage').value = template.message;
-
-    handleTypeChange();
-
-    if (template.type === 'poll' && template.pollOptions) {
-        const list = document.getElementById('pollOptionsList');
-        list.innerHTML = '';
-        template.pollOptions.forEach(opt => addPollOption(opt));
-    }
-
-    if (template.imagePath) {
-        document.getElementById('currentImagePreview').src = template.imagePath;
-        document.getElementById('currentImage').classList.remove('hidden');
-    } else {
-        document.getElementById('currentImage').classList.add('hidden');
-    }
-
-    showTemplateForm(true);
+function editTemplate(id) {
+    console.log('Edit button clicked, id:', id);
+    window.location.href = `add_template.html?id=${id}`;
 }
 
-async function deleteTemplate(id) {
-    if (!confirm('Are you sure you want to delete this template?')) return;
+    async function deleteTemplate(id) {
+        if (!confirm('Are you sure you want to delete this template?')) return;
 
-    try {
-        const response = await fetch(`/api/templates/${id}`, { method: 'DELETE' });
-        if (response.ok) {
-            await loadTemplates();
-        } else {
-            alert('Failed to delete template');
+        try {
+            const response = await fetch(`/api/templates/${id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+            if (response.ok) {
+                await loadTemplates();
+            } else {
+                let errMsg = 'Failed to delete template';
+                try {
+                    const errData = await response.json();
+                    errMsg += ': ' + (errData.error || JSON.stringify(errData));
+                } catch (_) {
+                    const txt = await response.text();
+                    errMsg += ': ' + txt;
+                }
+                alert(errMsg);
+            }
+        } catch (error) {
+            alert('Failed to delete template: ' + error.message);
         }
-    } catch (error) {
-        alert('Failed to delete template: ' + error.message);
     }
-}
 
 function removeCurrentImage() {
     document.getElementById('currentImage').style.display = 'none';
@@ -319,3 +320,44 @@ if (document.readyState === 'loading') {
 } else {
     init();
 }
+
+// ==================== VIEW TEMPLATE MODAL ====================
+function viewTemplate(id) {
+    const template = templates.find(t => (t.id || t._id) == id);
+    if (!template) return;
+    const container = document.getElementById('viewTemplateContent');
+    container.innerHTML = `
+        <div class="flex justify-between items-start mb-4">
+            <div class="template-name font-bold text-slate-100 flex items-center gap-2">
+                ${escapeHtml(template.name)}
+                ${template.type === 'poll' ? `<span class="px-2 py-0.5 text-[10px] uppercase font-bold bg-purple-500/20 text-purple-400 rounded-full border border-purple-500/20">Poll</span>` : `<span class="px-2 py-0.5 text-[10px] uppercase font-bold bg-blue-500/20 text-blue-400 rounded-full border border-blue-500/20">Message</span>`}
+            </div>
+        </div>
+        <div class="template-message text-sm text-slate-400 mb-4 leading-relaxed">
+            ${escapeHtml(template.message)}
+        </div>
+        ${template.imagePath && template.type !== 'poll' ? `
+            <div class="mt-4 rounded-xl overflow-hidden border border-dark-border/50 aspect-video bg-dark-bg/40">
+                <img src="${template.imagePath}" class="w-full h-full object-cover" alt="Template image" />
+            </div>` : ''}
+        ${template.type === 'poll' && template.pollOptions && template.pollOptions.length > 0 ? `
+            <div class="mt-4 space-y-2">
+                ${template.pollOptions.map((opt, i) => `
+                    <div class="flex items-center gap-3 p-2 bg-dark-bg/50 rounded-lg border border-dark-border/30 text-sm">
+                        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">${i + 1}</span>
+                        <span class="text-slate-300 truncate">${escapeHtml(opt)}</span>
+                    </div>`).join('')}
+            </div>` : ''}
+    `;
+    document.getElementById('viewTemplateModal').classList.remove('hidden');
+}
+
+function hideViewTemplateModal() {
+    document.getElementById('viewTemplateModal').classList.add('hidden');
+    const container = document.getElementById('viewTemplateContent');
+    if (container) container.innerHTML = '';
+}
+
+// Close modal on overlay click
+document.getElementById('viewModalOverlay')?.addEventListener('click', hideViewTemplateModal);
+

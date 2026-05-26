@@ -137,8 +137,8 @@ async function loadTemplates() {
 function updateTemplateSelect() {
     const select = document.getElementById('bulkTemplateSelect');
     if (!select) return;
-    select.innerHTML = '<option value="">-- Select a template --</option>' +
-        templates.map(t => `<option value="${t._id}">${escapeHtml(t.name)}</option>`).join('');
+        select.innerHTML = '<option value="" >-- Select a template --</option>' +
+        templates.map(t => `<option value="${t.id || t._id}">${escapeHtml(t.name)}</option>`).join('');
 }
 
 function previewTemplate() {
@@ -265,10 +265,11 @@ function renderModalLists(lists) {
     }
 
     lists.forEach(list => {
-        const isSelected = selectedListId === list._id;
-        const div = document.createElement('div');
-        div.className = `p-4 border rounded-2xl cursor-pointer transition-all ${isSelected ? 'bg-indigo-500/10 border-indigo-500 shadow-lg' : 'bg-slate-900/30 border-dark-border hover:bg-slate-800/50'}`;
-        div.onclick = () => selectList(list._id);
+    const listId = list.id || list._id;
+    const isSelected = selectedListId === listId;
+    const div = document.createElement('div');
+    div.className = `p-4 border rounded-2xl cursor-pointer transition-all ${isSelected ? 'bg-indigo-500/10 border-indigo-500 shadow-lg' : 'bg-slate-900/30 border-dark-border hover:bg-slate-800/50'}`;
+    div.onclick = () => selectList(listId);
 
         div.innerHTML = `
             <div class="flex items-center justify-between">
@@ -276,7 +277,7 @@ function renderModalLists(lists) {
                     <div class="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-xl shadow-inner">📄</div>
                     <div>
                         <p class="text-sm font-bold text-slate-200">${escapeHtml(list.name)}</p>
-                        <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">${list.contactCount} contacts • ${new Date(list.createdAt).toLocaleDateString('en-IN')}</p>
+                                                <p class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mt-0.5">${list.contact_count ?? list.contactCount ?? 0} contacts • ${(list.createdAt) ? new Date(list.createdAt).toLocaleDateString('en-IN') : 'N/A'}</p>
                     </div>
                 </div>
                 ${isSelected ? '<div class="text-indigo-400"><svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg></div>' : '<div class="text-slate-700"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>'}
@@ -288,7 +289,7 @@ function renderModalLists(lists) {
 
 function selectList(id) {
     selectedListId = id;
-    const list = contactLists.find(l => l._id === id);
+    const list = contactLists.find(l => (l.id || l._id) === id);
     if (!list) return;
 
     // Update main UI selection status
@@ -300,13 +301,13 @@ function selectList(id) {
     innerContainer.innerHTML = `
         <div class="w-16 h-16 bg-indigo-500/10 rounded-full flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform shadow-inner">✅</div>
         <h4 class="text-indigo-400 font-bold mb-1">List Selected: ${escapeHtml(list.name)}</h4>
-        <p class="text-slate-500 text-xs mb-6 text-center max-w-[250px]">Contains ${list.contactCount} contacts. Press confirm to prepare campaign.</p>
+        <p class="text-slate-500 text-xs mb-6 text-center max-w-[250px]">Contains ${list.contact_count ?? list.contactCount ?? 0} contacts. Press confirm to prepare campaign.</p>
         <button onclick="openListModal()" class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl border border-dark-border transition-all flex items-center gap-2 text-xs">
             Change List
         </button>
     `;
 
-    document.getElementById('crmSelectedCount').textContent = `Ready: ${list.name} (${list.contactCount} contacts)`;
+    document.getElementById('crmSelectedCount').textContent = `Ready: ${list.name} (${list.contact_count ?? list.contactCount ?? 0} contacts)`;
     document.getElementById('confirmCrmBtn').disabled = false;
 
     closeListModal();
@@ -366,7 +367,18 @@ async function confirmListSelection() {
 // ==================== CAMPAIGN EXECUTION ====================
 
 async function sendBulkMessages() {
-    const templateId = document.getElementById('bulkTemplateSelect').value;
+    // Validate selections before proceeding
+    const templateSelect = document.getElementById('bulkTemplateSelect');
+    const templateId = templateSelect ? templateSelect.value : '';
+    if (!templateId) {
+        alert('Please select a message template before launching the campaign.');
+        return;
+    }
+    if (!selectedListId) {
+        alert('Please select a contact list before launching the campaign.');
+        return;
+    }
+    console.log('sendBulkMessages invoked', { uploadedCount: uploadedContacts.length, templateId });
     const delay = document.getElementById('bulkDelaySelect').value;
     if (!confirm(`Launch campaign to ${uploadedContacts.length} contacts?`)) return;
 

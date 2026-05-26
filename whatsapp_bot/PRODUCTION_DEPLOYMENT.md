@@ -204,7 +204,6 @@ Railway is highly recommended for this bot as it provides excellent support for 
    - `DASHBOARD_USERNAME`: Your admin username.
    - `DASHBOARD_PASSWORD`: Your admin password.
    - `SESSION_SECRET`: A strong 64-character secret.
-   - `CLOUDINARY_URL`: Your Cloudinary connection string.
    - `NODE_ENV`: `production`
 
 4. **Deployment**:
