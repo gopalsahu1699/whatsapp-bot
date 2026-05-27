@@ -1,5 +1,4 @@
 const express = require('express');
-const session = require('express-session');
 const app = express();
 const PORT = process.env.PORT || 3000; // Port configuration
 
@@ -76,36 +75,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
-// Validate SESSION_SECRET in production
-const SESSION_SECRET = process.env.SESSION_SECRET || 'fallback-secret-key';
-const isProduction = process.env.NODE_ENV === 'production';
 
-if (isProduction && (!SESSION_SECRET || SESSION_SECRET.length < 32 || SESSION_SECRET.includes('change-in-production') || SESSION_SECRET === 'fallback-secret-key')) {
-    console.error('\n⚠️  SECURITY WARNING: Weak or default SESSION_SECRET detected in production!');
-    console.error(`Debug Info: Secret Length: ${SESSION_SECRET ? SESSION_SECRET.length : 0}, Is Default: ${SESSION_SECRET === 'fallback-secret-key'}`);
-    console.error('Generate a strong secret with: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'hex\'))"');
-    console.error('Add it to your .env file as SESSION_SECRET=<generated-secret>\n');
-    process.exit(1);
-}
-
-// Session configuration
-const sessionConfig = {
-    secret: SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: isProduction, // HTTPS only in production
-        httpOnly: true, // Prevent XSS attacks
-        sameSite: isProduction ? 'none' : 'lax', // Needed for cross-domain cookies in production
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    }
-};
-
-let sessionMiddleware = session(sessionConfig);
-
-app.use((req, res, next) => {
-  sessionMiddleware(req, res, next);
-});
 
 // WhatsApp client (will be set from index.js)
 let whatsappClient = null;
@@ -154,13 +124,9 @@ function setWhatsAppClient(client) {
     });
 }
 
-// Authentication middleware
+// Authentication middleware (disabled – login removed)
 function requireAuth(req, res, next) {
-    if (req.session && req.session.authenticated) {
-        next();
-    } else {
-        res.status(401).json({ error: 'Unauthorized' });
-    }
+    next();
 }
 
 function replacePlaceholders(template, data) {
@@ -173,32 +139,7 @@ function replacePlaceholders(template, data) {
 }
 
 // ==================== AUTHENTICATION ROUTES ====================
-
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-
-    if (username === process.env.DASHBOARD_USERNAME &&
-        password === process.env.DASHBOARD_PASSWORD) {
-        req.session.authenticated = true;
-        req.session.username = username;
-        res.json({ success: true });
-    } else {
-        res.status(401).json({ error: 'Invalid credentials' });
-    }
-});
-
-app.post('/api/logout', (req, res) => {
-    req.session.destroy();
-    res.json({ success: true });
-});
-
-app.get('/api/check-auth', (req, res) => {
-    if (req.session && req.session.authenticated) {
-        res.json({ authenticated: true, username: req.session.username });
-    } else {
-        res.json({ authenticated: false });
-    }
-});
+// Authentication endpoints removed. Dashboard is fully local and public-access.
 
 // Health check / Splash endpoint
 app.get('/', (req, res) => {
@@ -238,6 +179,32 @@ app.get('/api/whatsapp/status', requireAuth, async (req, res) => {
     }
 });
 
+// ==================== AI RESPONDER TOGGLE ====================
+
+
+const { getAIEnabled, setAIEnabled } = require('./state');
+app.get('/api/whatsapp/ai-status', requireAuth, (req, res) => {
+    try {
+        const enabled = getAIEnabled();
+        res.json({ enabled });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/whatsapp/ai-toggle', requireAuth, (req, res) => {
+    try {
+        const { enabled } = req.body || {};
+        const targetState = enabled !== undefined ? enabled : !getAIEnabled();
+        setAIEnabled(targetState);
+        console.log(`[AI Responder] Status updated to: ${targetState ? 'ENABLED' : 'DISABLED'}`);
+        res.json({ success: true, enabled: targetState });
+    } catch (error) {
+        console.error('AI toggle error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/whatsapp/qr', requireAuth, (req, res) => {
     if (qrCodeData) {
         res.json({ qr: qrCodeData });
@@ -258,6 +225,36 @@ app.post('/api/whatsapp/restart', requireAuth, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+// New start endpoint to initiate the bot when stopped
+app.post('/api/whatsapp/start', requireAuth, async (req, res) => {
+    try {
+        const { startBot } = require('./index');
+        // Trigger startBot; if already running it will be a no‑op or re‑initialize
+        startBot();
+        isClientReady = false;
+        qrCodeData = null;
+        res.json({ success: true, message: 'Starting WhatsApp client...' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+    // New stop endpoint to halt the bot
+    app.post('/api/whatsapp/stop', requireAuth, async (req, res) => {
+        try {
+            const { stopBot } = require('./index');
+            // Trigger stopBot to destroy client
+            stopBot();
+            isClientReady = false;
+            qrCodeData = null;
+            res.json({ success: true, message: 'Stopping WhatsApp client...' });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    });
+
+
 
 // ==================== TEMPLATE ROUTES ====================
 

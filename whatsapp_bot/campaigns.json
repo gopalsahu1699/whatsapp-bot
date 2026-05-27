@@ -97,5 +97,38 @@
     "failed": 0,
     "total": 3,
     "created_at": "2026-05-26T11:40:18.440Z"
+  },
+  {
+    "id": "1779901586153",
+    "name": "Campaign - builders and architects - 27/5/2026",
+    "template_id": "efd0c8ef-f8b3-40fc-9624-540b12c6f59f",
+    "template_name": "builders and architects",
+    "template_type": "text",
+    "sent": 2,
+    "failed": 0,
+    "total": 2,
+    "created_at": "2026-05-27T17:06:26.217Z"
+  },
+  {
+    "id": "1779905422138",
+    "name": "Campaign - First Introduction (Cold Audience) - 27/5/2026",
+    "template_id": "d13e1e91-8374-43a6-a6c7-0e37802d9e3a",
+    "template_name": "First Introduction (Cold Audience)",
+    "template_type": "text",
+    "sent": 2,
+    "failed": 0,
+    "total": 2,
+    "created_at": "2026-05-27T18:10:22.138Z"
+  },
+  {
+    "id": "1779905845421",
+    "name": "Campaign - builders and architects - 27/5/2026",
+    "template_id": "efd0c8ef-f8b3-40fc-9624-540b12c6f59f",
+    "template_name": "builders and architects",
+    "template_type": "text",
+    "sent": 8,
+    "failed": 2,
+    "total": 10,
+    "created_at": "2026-05-27T18:17:25.421Z"
   }
 ]

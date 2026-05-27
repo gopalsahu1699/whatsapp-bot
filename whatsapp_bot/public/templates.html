@@ -101,8 +101,7 @@
                     </div>
 
                     <div class="flex items-center space-x-3">
-                        <button id="logoutBtn"
-                            class="hidden sm:block px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+
                         <!-- Mobile Menu Button -->
                         <button id="mobileMenuBtn"
                             class="md:hidden p-2 text-slate-400 hover:text-white transition-colors">
@@ -157,12 +156,7 @@
                             <span>👤</span> <span>Contacts CRM</span>
                         </a>
                     </nav>
-                    <div class="p-6 border-t border-dark-border">
-                        <button id="mobileLogoutBtn"
-                            class="w-full py-4 bg-slate-800 text-red-400 font-bold rounded-2xl border border-red-500/10 active:scale-95 transition-all">
-                            Logout Device
-                        </button>
-                    </div>
+
                 </div>
             </div>
         </header>
@@ -338,9 +332,7 @@
         closeMobileMenu?.addEventListener('click', () => toggleMenu(false));
         mobileMenuOverlay?.addEventListener('click', () => toggleMenu(false));
 
-        document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
-            document.getElementById('logoutBtn')?.click();
-        });
+
     </script>
 </body>
 

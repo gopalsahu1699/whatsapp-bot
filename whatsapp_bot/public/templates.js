@@ -1,32 +1,17 @@
 // Global state
 let templates = [];
 
-// Check authentication on load
-async function checkAuth() {
-    try {
-        const response = await fetch('/api/check-auth');
-        const data = await response.json();
 
-        if (!data.authenticated) {
-            window.location.href = '/login.html';
-        }
-    } catch (error) {
-        console.error('Auth check failed:', error);
-        window.location.href = '/login.html';
-    }
-}
 
 // Initialize templates page
 async function init() {
-    await checkAuth();
     setupEventListeners();
     await loadTemplates();
 }
 
 // Setup event listeners
 function setupEventListeners() {
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', logout);
+
 
     // Templates
     document.getElementById('addTemplateBtn').addEventListener('click', () => { window.location.href = 'add_template.html'; });
@@ -39,12 +24,7 @@ function setupEventListeners() {
     document.getElementById('modalOverlay')?.addEventListener('click', hideTemplateForm);
 }
 
-// ==================== AUTHENTICATION ====================
 
-async function logout() {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/login.html';
-}
 
 // ==================== TEMPLATES ====================
 

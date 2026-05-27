@@ -133,18 +133,7 @@
     <script>
         async function startApp() {
             const startTime = Date.now();
-            let destination = '/login.html';
-
-            try {
-                // Check auth while animation is playing
-                const response = await fetch('/api/check-auth');
-                const data = await response.json();
-                if (data.authenticated) {
-                    destination = '/dashboard.html';
-                }
-            } catch (error) {
-                console.error('Auth check failed:', error);
-            }
+            const destination = '/dashboard.html';
 
             // Ensure animation plays for at least 3 seconds for brand impact
             const elapsedTime = Date.now() - startTime;

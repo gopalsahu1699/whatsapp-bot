@@ -122,11 +122,8 @@
                     <a href="#workflow" class="hover:text-primary transition-colors">How it Works</a>
                     <a href="#safety" class="hover:text-primary transition-colors">Safety</a>
                     <div class="flex items-center space-x-4 ml-4">
-                        <a href="/login.html" id="navLoginBtn"
-                            class="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-full transition-all border border-white/5">Login</a>
-                        <a href="/login.html" id="navCtaBtn"
-                            class="px-6 py-2.5 cta-gradient text-white rounded-full font-bold shadow-lg shadow-indigo-500/25 hover:scale-105 transition-all">Get
-                            Started</a>
+                        <a href="/splash.html" id="navCtaBtn"
+                            class="px-6 py-2.5 cta-gradient text-white rounded-full font-bold shadow-lg shadow-indigo-500/25 hover:scale-105 transition-all scale-110">Get Started</a>
                     </div>
                 </div>
                 <!-- Mobile toggle -->
@@ -149,11 +146,8 @@
                         class="block text-slate-400 font-bold hover:text-primary py-2 transition-colors border-b border-white/5">Safety</a>
                 </div>
                 <div class="pt-4 flex flex-col gap-4 px-2">
-                    <a href="/login.html" id="mobileLoginBtn"
-                        class="w-full text-center px-6 py-4 bg-slate-800 text-white rounded-2xl border border-white/5 font-bold">Login</a>
-                    <a href="/login.html" id="mobileCtaBtn"
-                        class="w-full text-center px-6 py-4 cta-gradient text-white rounded-2xl font-black shadow-xl shadow-indigo-500/20">Get
-                        Started</a>
+                    <a href="/splash.html" id="mobileCtaBtn"
+                        class="w-full text-center px-6 py-4 cta-gradient text-white rounded-2xl font-black shadow-xl shadow-indigo-500/20">Get Started</a>
                 </div>
             </div>
         </div>
@@ -179,12 +173,10 @@
                     Experience growth without the manual grind.
                 </p>
                 <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4 px-4">
-                    <a href="/login.html" id="heroCtaBtn"
-                        class="w-full sm:w-auto px-10 py-5 cta-gradient text-white rounded-2xl font-black text-lg shadow-2xl shadow-indigo-500/30 active:scale-95 transition-all">Start
-                        Your Campaign</a>
+                    <a href="/splash.html" id="heroCtaBtn"
+                        class="w-full sm:w-auto px-10 py-5 cta-gradient text-white rounded-2xl font-black text-lg shadow-2xl shadow-indigo-500/30 active:scale-95 transition-all">Start Your Campaign</a>
                     <a href="#features"
-                        class="w-full sm:w-auto px-10 py-5 bg-slate-800/50 hover:bg-slate-800 text-white border border-white/5 rounded-2xl font-bold text-lg transition-all">Explore
-                        Features</a>
+                        class="w-full sm:w-auto px-10 py-5 bg-slate-800/50 hover:bg-slate-800 text-white border border-white/5 rounded-2xl font-bold text-lg transition-all">Explore Features</a>
                 </div>
 
                 <!-- Hero Image/Mockup Replacement -->
@@ -302,7 +294,7 @@
                         everything from personal follow-ups to enterprise-scale marketing.</p>
                 </div>
                 <div class="hidden lg:block pb-2">
-                    <a href="/login.html" class="text-primary font-bold hover:underline flex items-center">
+                    <a href="/splash.html" class="text-primary font-bold hover:underline flex items-center">
                         View Detailed Docs <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -454,11 +446,9 @@
                 <p class="text-lg sm:text-xl text-slate-500 font-medium">Join 500+ businesses automating their
                     engagement with Autommensor Studio.</p>
                 <div class="pt-6">
-                    <a href="/login.html" id="finalCtaBtn"
-                        class="w-full sm:w-auto inline-block px-12 py-5 cta-gradient text-white rounded-2xl font-black text-xl shadow-2xl shadow-indigo-500/40 active:scale-95 transition-all">Get
-                        Started for Free</a>
-                    <p class="text-[10px] text-slate-600 mt-6 font-bold uppercase tracking-widest">No credit card
-                        required • Instant sync</p>
+                    <a href="/splash.html" id="finalCtaBtn"
+                        class="w-full sm:w-auto inline-block px-12 py-5 cta-gradient text-white rounded-2xl font-black text-xl shadow-2xl shadow-indigo-500/40 active:scale-95 transition-all">Get Started for Free</a>
+                    <p class="text-[10px] text-slate-600 mt-6 font-bold uppercase tracking-widest">No credit card required • Instant sync</p>
                 </div>
             </div>
         </div>
@@ -538,46 +528,6 @@
                 menuIcon.setAttribute('d', 'M4 6h16M4 12h16m-7 6h7');
             });
         });
-
-        // Auth check and UI update
-        async function checkAuthStatus() {
-            try {
-                const response = await fetch('/api/check-auth');
-                const data = await response.json();
-
-                if (data.authenticated) {
-                    const buttons = [
-                        { id: 'navLoginBtn', hide: true },
-                        { id: 'mobileLoginBtn', hide: true },
-                        { id: 'navCtaBtn', text: 'Dashboard', href: '/dashboard.html' },
-                        { id: 'mobileCtaBtn', text: 'Dashboard', href: '/dashboard.html' },
-                        { id: 'heroCtaBtn', text: 'Go to Dashboard', href: '/dashboard.html' },
-                        { id: 'finalCtaBtn', text: 'Open Dashboard', href: '/dashboard.html' }
-                    ];
-
-                    buttons.forEach(btn => {
-                        const el = document.getElementById(btn.id);
-                        if (el) {
-                            if (btn.hide) {
-                                el.classList.add('hidden');
-                                // Ensure the other button looks good alone
-                                if (btn.id === 'navLoginBtn') {
-                                    const cta = document.getElementById('navCtaBtn');
-                                    if (cta) cta.classList.add('scale-110');
-                                }
-                            } else {
-                                el.textContent = btn.text;
-                                el.href = btn.href;
-                            }
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('Auth check failed:', error);
-            }
-        }
-
-        checkAuthStatus();
     </script>
 </body>
 

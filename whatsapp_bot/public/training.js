@@ -1,36 +1,19 @@
-// Check authentication on load
-async function checkAuth() {
-    try {
-        const response = await fetch('/api/check-auth');
-        const data = await response.json();
 
-        if (!data.authenticated) {
-            window.location.href = '/login.html';
-        }
-    } catch (error) {
-        console.error('Auth check failed:', error);
-        window.location.href = '/login.html';
-    }
-}
 
 // Initialize training page
 async function init() {
-    await checkAuth();
     setupEventListeners();
     await loadTrainingData();
 }
 
 // Setup event listeners
 function setupEventListeners() {
-    document.getElementById('logoutBtn').addEventListener('click', logout);
+
     document.getElementById('saveTrainingBtn').addEventListener('click', saveTrainingData);
     document.getElementById('resetTrainingBtn').addEventListener('click', loadTrainingData);
 }
 
-async function logout() {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/login.html';
-}
+
 
 async function loadTrainingData() {
     try {

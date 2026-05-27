@@ -4,53 +4,56 @@ let contactLists = [];
 let selectedListId = null;
 let bulkEventSource = null;
 
-// Check authentication on load
-async function checkAuth() {
-    try {
-        const response = await fetch('/api/check-auth');
-        const data = await response.json();
-        if (!data.authenticated) {
-            window.location.href = '/login.html';
-        }
-    } catch (error) {
-        console.error('Auth check failed:', error);
-        window.location.href = '/login.html';
-    }
-}
+
 
 // Initialize page
 async function init() {
-    await checkAuth();
     setupEventListeners();
     await loadWhatsAppStatus();
+    await loadAIStatus();
     await loadTemplates();
     startStatusPolling();
 }
 
 // Setup event listeners
 function setupEventListeners() {
-    document.getElementById('logoutBtn').addEventListener('click', logout);
-    document.getElementById('uploadCsvBtn').addEventListener('click', uploadCSV);
-    document.getElementById('sendBulkBtn').addEventListener('click', sendBulkMessages);
-    document.getElementById('cancelBulkBtn').addEventListener('click', cancelBulk);
-    document.getElementById('bulkTemplateSelect').addEventListener('change', previewTemplate);
-    document.getElementById('downloadSample').addEventListener('click', downloadSampleCSV);
+
+    const sendBulkBtn = document.getElementById('sendBulkBtn');
+    const bulkTemplateSelect = document.getElementById('bulkTemplateSelect');
+    if (bulkTemplateSelect) {
+        bulkTemplateSelect.addEventListener('change', updateSendButton);
+    }
+    if (sendBulkBtn) {
+        sendBulkBtn.addEventListener('click', sendBulkMessages);
+    }
+    const cancelBulkBtn = document.getElementById('cancelBulkBtn');
+    if (cancelBulkBtn) {
+        cancelBulkBtn.addEventListener('click', cancelBulk);
+    }
 
     // Tab Events
-    document.getElementById('tabCsv').addEventListener('click', () => switchTab('csv'));
-    document.getElementById('tabCrm').addEventListener('click', () => switchTab('crm'));
-    document.getElementById('confirmCrmBtn').addEventListener('click', confirmListSelection);
+    const tabCsv = document.getElementById('tabCsv');
+    if (tabCsv) {
+        tabCsv.addEventListener('click', () => switchTab('csv'));
+    }
+    const tabCrm = document.getElementById('tabCrm');
+    if (tabCrm) {
+        tabCrm.addEventListener('click', () => switchTab('crm'));
+    }
+    const confirmCrmBtn = document.getElementById('confirmCrmBtn');
+    if (confirmCrmBtn) {
+        confirmCrmBtn.addEventListener('click', confirmListSelection);
+    }
 
     // QR related
-    document.getElementById('regenQrBtn').addEventListener('click', restartWhatsApp);
+    const regenQrBtn = document.getElementById('regenQrBtn');
+    if (regenQrBtn) {
+        regenQrBtn.addEventListener('click', restartWhatsApp);
+    }
 }
 
 // ==================== AUTH & WHATSAPP STATUS ====================
 
-async function logout() {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/login.html';
-}
 
 async function loadWhatsAppStatus() {
     try {
@@ -119,7 +122,68 @@ async function restartWhatsApp() {
 }
 
 function startStatusPolling() {
-    setInterval(loadWhatsAppStatus, 5000);
+    setInterval(() => {
+        loadWhatsAppStatus();
+        loadAIStatus();
+    }, 5000);
+}
+
+async function loadAIStatus() {
+    try {
+        const response = await fetch('/api/whatsapp/ai-status');
+        const data = await response.json();
+
+        // Safely get elements, may be absent on some pages
+        const aiStatusDot = document.getElementById('aiStatusDot');
+        const aiStatusDotFixed = document.getElementById('aiStatusDotFixed');
+        const aiStatusText = document.getElementById('aiStatusText');
+        const toggleAiBtn = document.getElementById('toggleAiBtn');
+
+        // If elements exist, update them; otherwise, skip.
+        if (data.enabled) {
+            if (aiStatusDot) aiStatusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75';
+            if (aiStatusDotFixed) aiStatusDotFixed.className = 'relative inline-flex rounded-full h-3 w-3 bg-emerald-500';
+            if (aiStatusText) {
+                aiStatusText.textContent = 'Active & Responding';
+                aiStatusText.className = 'text-[10px] text-emerald-400 font-bold uppercase tracking-wider';
+            }
+            if (toggleAiBtn) {
+                toggleAiBtn.textContent = 'Pause AI Responder';
+                toggleAiBtn.className = 'px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 text-xs font-bold rounded-xl transition-all shadow-md active:scale-95';
+            }
+        } else {
+            if (aiStatusDot) aiStatusDot.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75';
+            if (aiStatusDotFixed) aiStatusDotFixed.className = 'relative inline-flex rounded-full h-3 w-3 bg-rose-500';
+            if (aiStatusText) {
+                aiStatusText.textContent = 'Paused / Off';
+                aiStatusText.className = 'text-[10px] text-rose-400 font-bold uppercase tracking-wider';
+            }
+            if (toggleAiBtn) {
+                toggleAiBtn.textContent = 'Resume AI Responder';
+                toggleAiBtn.className = 'px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95';
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load AI status:', error);
+    }
+}
+
+
+
+async function toggleAIResponder() {
+    const btn = document.getElementById('toggleAiBtn');
+    btn.disabled = true;
+    try {
+        const response = await fetch('/api/whatsapp/ai-toggle', { method: 'POST' });
+        const data = await response.json();
+        if (data.success) {
+            await loadAIStatus();
+        }
+    } catch (error) {
+        console.error('Failed to toggle AI Auto-responder:', error);
+    } finally {
+        btn.disabled = false;
+    }
 }
 
 // ==================== TEMPLATES ====================

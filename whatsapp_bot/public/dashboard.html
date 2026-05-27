@@ -101,8 +101,7 @@
                     </div>
 
                     <div class="flex items-center space-x-3">
-                        <button id="logoutBtn"
-                            class="hidden sm:block px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+
                         <!-- Mobile Menu Button -->
                         <button id="mobileMenuBtn"
                             class="md:hidden p-2 text-slate-400 hover:text-white transition-colors">
@@ -157,12 +156,7 @@
                             <span>👤</span> <span>Contacts CRM</span>
                         </a>
                     </nav>
-                    <div class="p-6 border-t border-dark-border">
-                        <button id="mobileLogoutBtn"
-                            class="w-full py-4 bg-slate-800 text-red-400 font-bold rounded-2xl border border-red-500/10 active:scale-95 transition-all">
-                            Logout Device
-                        </button>
-                    </div>
+
                 </div>
             </div>
         </header>
@@ -190,6 +184,23 @@
                                 <span id="statusText" class="text-sm font-bold text-slate-400">Checking...</span>
                             </div>
 
+                            <!-- AI Auto-Responder Toggle -->
+                            <div class="p-4 bg-indigo-500/5 rounded-xl border border-indigo-500/20 flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <span class="relative flex h-3 w-3">
+                                        <span id="aiStatusDot" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span id="aiStatusDotFixed" class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                    </span>
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-300">AI Auto-Responder</p>
+                                        <p id="aiStatusText" class="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">Active & Responding</p>
+                                    </div>
+                                </div>
+                                <button id="toggleAiBtn" class="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-all shadow-md active:scale-95">
+                                    Pause AI
+                                </button>
+                            </div>
+
                             <div id="qrContainer"
                                 class="hidden text-center p-6 bg-white rounded-2xl shadow-inner animate-in fade-in zoom-in duration-500">
                                 <p class="text-slate-900 text-xs font-bold uppercase tracking-wider mb-4">Scan to
@@ -207,9 +218,15 @@
                                     Restart WhatsApp Bot
                                 </button>
                                 <button id="disconnectBtn"
-                                    class="hidden w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 font-bold rounded-xl transition-all">
-                                    Disconnect Session
-                                </button>
+    class="hidden w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 font-bold rounded-xl transition-all">
+    Disconnect Session
+</button>
+<button id="startBotBtn" class="hidden w-full py-3 bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30 font-bold rounded-xl transition-all">
+    Start Bot
+</button>
+<button id="stopBotBtn" class="hidden w-full py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 font-bold rounded-xl transition-all">
+    Stop Bot
+</button>
                             </div>
                         </div>
                     </section>
@@ -317,9 +334,7 @@
         closeMobileMenu?.addEventListener('click', () => toggleMenu(false));
         mobileMenuOverlay?.addEventListener('click', () => toggleMenu(false));
 
-        document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
-            document.getElementById('logoutBtn')?.click();
-        });
+
     </script>
 </body>
 

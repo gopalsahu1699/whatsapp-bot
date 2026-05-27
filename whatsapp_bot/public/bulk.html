@@ -112,8 +112,7 @@
                             <span id="statusText"
                                 class="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Checking...</span>
                         </div>
-                        <button id="logoutBtn"
-                            class="hidden sm:block px-4 py-2 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all">Logout</button>
+
                         <!-- Mobile Menu Button -->
                         <button id="mobileMenuBtn"
                             class="md:hidden p-2 text-slate-400 hover:text-white transition-colors">
@@ -168,12 +167,7 @@
                             <span>👤</span> <span>Contacts CRM</span>
                         </a>
                     </nav>
-                    <div class="p-6 border-t border-dark-border">
-                        <button id="mobileLogoutBtn"
-                            class="w-full py-4 bg-slate-800 text-red-400 font-bold rounded-2xl border border-red-500/10 active:scale-95 transition-all">
-                            Logout Device
-                        </button>
-                    </div>
+
                 </div>
             </div>
         </header>
@@ -333,6 +327,8 @@
                                         Campaign Execution
                                     </h3>
                                     <div class="bg-dark-bg/30 p-8 rounded-3xl border border-dark-border/30">
+                                   
+
                                         <div class="flex flex-col sm:flex-row gap-4 mb-8">
                                             <button id="sendBulkBtn"
                                                 class="flex-grow py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-700 disabled:opacity-50 text-white font-bold rounded-2xl shadow-xl shadow-emerald-500/20 transition-all transform active:scale-95 flex items-center justify-center space-x-2"
@@ -501,9 +497,7 @@
         closeMobileMenu?.addEventListener('click', () => toggleMenu(false));
         mobileMenuOverlay?.addEventListener('click', () => toggleMenu(false));
 
-        document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
-            document.getElementById('logoutBtn')?.click();
-        });
+
     </script>
 </body>
 

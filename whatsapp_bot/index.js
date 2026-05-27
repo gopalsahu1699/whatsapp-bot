@@ -8,6 +8,8 @@ const { startServer } = require('./server');
 const fs = require('fs');
 const path = require('path');
 
+const { getAIEnabled, setAIEnabled } = require('./state');
+
 let client;
 let isInitializing = false;
 
@@ -219,7 +221,14 @@ async function startBot() {
     }
 
     client.on('message', async msg => {
-        // Ignore messages sent by the bot itself to prevent duplicate replies
+        if (!getAIEnabled()) {
+            return;
+        }
+        // Ignore outgoing messages sent by the bot itself (prevents self-reply loops)
+        if (msg.fromMe) {
+            return;
+        }
+        // Fallback: also check WID match
         if (client.info && client.info.wid && msg.from === client.info.wid._serialized) {
             return;
         }
@@ -268,10 +277,27 @@ async function restartBot() {
     await startBot();
 }
 
+// New function to stop the bot without restarting
+async function stopBot() {
+    console.log('🛑 Stopping WhatsApp Bot...');
+    if (client) {
+        try {
+            await client.destroy();
+            console.log('Bot client destroyed.');
+        } catch (err) {
+            console.warn('Error destroying client during stop:', err.message);
+        }
+    }
+    client = null;
+}
+
 startBot();
 
 module.exports = {
     getClient: () => client,
-    restartBot: restartBot
+    restartBot: restartBot,
+    stopBot: stopBot,
+    // Expose client control functions (AI flag handled via state module)
+    // Note: getAIEnabled and setAIEnabled are provided by state.js
 };
 
